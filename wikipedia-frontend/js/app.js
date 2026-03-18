@@ -1,5 +1,3 @@
-// wikipedia-frontend/js/app.js
-
 // --- 0. KONFIGURASI FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyCBhpa1S7KEjaovbIH5Kj4P58FgE3On0EA",
@@ -18,7 +16,7 @@ const database = firebase.database();
 const chatRef = database.ref('wiki_history'); 
 const myId = Math.random().toString(36).substring(7);
 
-// PENANDA WAKTU SESI (Untuk membedakan chat lama dan chat baru)
+// PENANDA WAKTU SESI
 const waktuMulaiSesi = Date.now();
 
 // --- 1. DEKLARASI ELEMEN ---
@@ -35,45 +33,45 @@ const safeScreen = document.getElementById('safe-screen');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// --- 2. LOGIKA PRESENSI (JOIN & LEAVE NOTIFICATION) ---
+// --- 2. LOGIKA PRESENSI (RADAR PACAR ANTI DUPLIKAT) ---
 const presenceRef = database.ref('status_kehadiran');
 const userStatusRef = presenceRef.push();
+let daftarUserOnline = {}; // Filter untuk mencegah notifikasi ganda
 
 database.ref('.info/connected').on('value', (snapshot) => {
     if (snapshot.val() === false) return;
 
-    // Saat tab ditutup, Firebase otomatis menghapus data ini
     userStatusRef.onDisconnect().remove().then(() => {
-        // Saat online, simpan ID kita ke daftar kehadiran
         userStatusRef.set({ 
             status: 'online',
             userId: myId 
         });
-        
-        // KITA HAPUS pengiriman log 'join' ke chatRef di sini
-        // agar layar tidak memunculkan notifikasi untuk diri sendiri.
     });
 });
 
-// DETEKSI SAAT PACAR MASUK (ATAU SUDAH STANDBY)
+// Deteksi Masuk (Join)
 presenceRef.on('child_added', (snapshot) => {
     const data = snapshot.val();
     
-    // CEK: Jika user yang terdeteksi online BUKAN diri kita sendiri
+    // Cek jika yang masuk bukan kita, DAN belum tercatat di sistem filter
     if (data && data.userId !== myId) {
-        // Tampilkan notifikasi hijau di layar referensi
-        tampilkanNotifikasiSistem("Seorang kontributor telah bergabung dalam sesi.", "join", true);
+        if (!daftarUserOnline[data.userId]) {
+            daftarUserOnline[data.userId] = true; // Tandai sudah masuk
+            tampilkanNotifikasiSistem("Seorang kontributor telah bergabung dalam sesi.", "join", true);
+        }
     }
 });
 
-// DETEKSI SAAT PACAR MENUTUP TAB (LEAVE)
+// Deteksi Keluar (Leave)
 presenceRef.on('child_removed', (snapshot) => {
     const data = snapshot.val();
     
-    // CEK: Jika user yang keluar BUKAN diri kita sendiri
+    // Cek jika yang keluar bukan kita, DAN dia memang sebelumnya ada
     if (data && data.userId !== myId) {
-        // Tampilkan notifikasi merah di layar referensi
-        tampilkanNotifikasiSistem("Seorang kontributor telah meninggalkan sesi.", "leave", true);
+        if (daftarUserOnline[data.userId]) {
+            delete daftarUserOnline[data.userId]; // Hapus dari catatan
+            tampilkanNotifikasiSistem("Seorang kontributor telah meninggalkan sesi.", "leave", true);
+        }
     }
 });
 
@@ -106,7 +104,7 @@ function pemicuDarurat() {
             tipe: 'darurat_on',
             waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             senderId: "system",
-            timestamp: Date.now() // Tambahkan timestamp
+            timestamp: Date.now()
         });
     } else {
         safeScreen.classList.add('hidden');
@@ -116,7 +114,7 @@ function pemicuDarurat() {
             tipe: 'darurat_off',
             waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             senderId: "system",
-            timestamp: Date.now() // Tambahkan timestamp
+            timestamp: Date.now()
         });
     }
 }
@@ -149,7 +147,7 @@ function gantiHalaman(tujuan) {
 
     if (tujuan === halamanRahasia) {
         chatInput.removeAttribute('readonly');
-        chatInput.placeholder = "Telusuri Wikipedia";
+        chatInput.placeholder = "Ketik rahasia...";
         chatInput.focus();
     } else {
         chatInput.setAttribute('readonly', true);
@@ -178,7 +176,7 @@ chatInput.addEventListener('keydown', (e) => {
                 teks: pesan,
                 waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
                 tipe: 'chat',
-                timestamp: Date.now() // Tambahkan timestamp
+                timestamp: Date.now()
             });
             chatInput.value = "";
         }
@@ -190,14 +188,13 @@ chatRef.limitToLast(30).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
     
-    // Cek apakah pesan ini dikirim SETELAH kita membuka web
+    // Cek apakah pesan baru (untuk layar chat rahasia)
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     
     if (data.tipe === 'chat') {
-        // --- RENDER KE HALAMAN ARSIP (Selalu Tampil) ---
+        // --- ARSIP LENGKAP ---
         const liArsip = document.createElement('li');
         liArsip.className = "flex items-start gap-2 border-b border-gray-100 py-2 text-[13px] hover:bg-gray-50";
-        
         let pengirimArsip = isMe ? `<b class="text-[#0645ad]">Me</b>` : `<b class="text-[#b32424]">Anonymous</b>`;
         let teksArsip = isMe ? `<span class="text-gray-900 font-medium">"${data.teks}"</span>` : `<span class="italic text-gray-600">"${data.teks}"</span>`;
 
@@ -207,35 +204,31 @@ chatRef.limitToLast(30).on('child_added', (snapshot) => {
             <div class="flex-1">${pengirimArsip} . . ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
-        // --- RENDER KE HALAMAN RAHASIA (Hanya Pesan Baru) ---
+        // --- LAYAR RAHASIA (HANYA PESAN BARU) ---
         if (pesanBaru) {
             const liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
-            
             if (isMe) {
-                // GAYA PESAN KAMU: Teks Hitam Medium + "Arsip Pribadi"
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${data.teks}"</span>. <i>Arsip Pribadi</i>, 2026.`;
             } else {
-                // GAYA PESAN TEMAN: Teks Biru Miring + "Sumber Luar"
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${data.teks}"</span>. <i>Sumber Luar</i>, 2026.`;
             }
-
             daftarReferensi.appendChild(liRef);
             if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
         }
 
     } else {
-        // JIKA TIPE BUKAN CHAT (SISTEM/JOIN)
-        tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru);
+        // JIKA BUKAN CHAT (Misal Boss Key dari device lain)
+        // Kita tidak mau memunculkan Boss Key lama saat refresh, jadi difilter juga
+        if (pesanBaru) tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru);
     }
 
-    // Auto-scroll hanya jika kita mendapat pesan baru
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 });
 
-// --- 8. FUNGSI LOG SISTEM (DENGAN FILTER PESAN BARU) ---
+// --- 8. FUNGSI LOG SISTEM ---
 function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
     const li = document.createElement('li');
     let warnaHex = "#72777d"; 
@@ -245,10 +238,10 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
         warnaHex = "#006400"; // Hijau Tua
         ikon = "+"; 
     } else if (tipe === 'leave') { 
-        warnaHex = "#b32424"; // Merah Gelap
+        warnaHex = "#b32424"; // Merah
         ikon = "-"; 
     } else if (tipe === 'darurat_on') { 
-        warnaHex = "#855e00"; // Cokelat Emas
+        warnaHex = "#855e00"; // Cokelat
         ikon = "⚠"; 
     } else if (tipe === 'darurat_off') { 
         warnaHex = "#36c"; // Biru
@@ -258,12 +251,12 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
     li.style.color = warnaHex;
     li.innerHTML = `<span style="font-weight: bold;">${ikon}</span> <span>${pesanSistem}</span>`;
     
-    // Duplikasi ke Arsip - SELALU DITAMPILKAN
+    // Tampilkan ke layar Arsip
     const liArsip = li.cloneNode(true);
     liArsip.className = "flex items-center gap-2 border-b border-gray-100 py-2 text-[12px] italic animate-fade-in";
     daftarArsipLengkap.appendChild(liArsip);
 
-    // Tampilkan di Chat Aktif - HANYA JIKA PESAN BARU ATAU EVENT REALTIME
+    // Tampilkan di layar Chat jika ini pesan/event baru
     if (pesanBaru) {
         li.className = "mb-2 italic text-[12px] flex items-center gap-2 font-sans animate-fade-in";
         daftarReferensi.appendChild(li);
