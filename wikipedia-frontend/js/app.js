@@ -44,29 +44,35 @@ database.ref('.info/connected').on('value', (snapshot) => {
 
     // Saat tab ditutup, Firebase otomatis menghapus data ini
     userStatusRef.onDisconnect().remove().then(() => {
-        // Saat online, simpan ID kita
+        // Saat online, simpan ID kita ke daftar kehadiran
         userStatusRef.set({ 
             status: 'online',
             userId: myId 
         });
-
-        chatRef.push({
-            teks: "Seorang kontributor baru telah bergabung dalam sesi penyuntingan.",
-            tipe: 'join',
-            waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            senderId: "system",
-            timestamp: Date.now()
-        });
+        
+        // KITA HAPUS pengiriman log 'join' ke chatRef di sini
+        // agar layar tidak memunculkan notifikasi untuk diri sendiri.
     });
 });
 
-// DETEKSI SAAT TEMAN MENUTUP TAB (LEAVE)
+// DETEKSI SAAT PACAR MASUK (ATAU SUDAH STANDBY)
+presenceRef.on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    
+    // CEK: Jika user yang terdeteksi online BUKAN diri kita sendiri
+    if (data && data.userId !== myId) {
+        // Tampilkan notifikasi hijau di layar referensi
+        tampilkanNotifikasiSistem("Seorang kontributor telah bergabung dalam sesi.", "join", true);
+    }
+});
+
+// DETEKSI SAAT PACAR MENUTUP TAB (LEAVE)
 presenceRef.on('child_removed', (snapshot) => {
     const data = snapshot.val();
     
-    // Pastikan yang keluar bukan diri kita sendiri
+    // CEK: Jika user yang keluar BUKAN diri kita sendiri
     if (data && data.userId !== myId) {
-        // Tampilkan notifikasi "Keluar" secara lokal di layar yang masih aktif
+        // Tampilkan notifikasi merah di layar referensi
         tampilkanNotifikasiSistem("Seorang kontributor telah meninggalkan sesi.", "leave", true);
     }
 });
