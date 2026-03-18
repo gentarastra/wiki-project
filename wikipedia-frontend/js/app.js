@@ -30,18 +30,31 @@ const sidebarKiri = document.getElementById('sidebar-kiri');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI SECARA DINAMIS ---
+// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI SECARA DINAMIS (DESAIN ELEGAN) ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
-layarProteksi.className = "fixed inset-0 bg-white/60 backdrop-blur-md z-[9999] flex flex-col items-center justify-center hidden transition-all duration-300";
+// Menggunakan background gelap pekat pekat dengan efek blur tingkat tinggi
+layarProteksi.className = "fixed inset-0 bg-[#0a0a0a]/95 backdrop-blur-xl z-[9999] flex flex-col items-center justify-center hidden transition-all duration-500";
 layarProteksi.innerHTML = `
-    <div class="bg-white border border-[#a2a9b1] shadow-2xl p-6 sm:p-8 max-w-[90%] sm:max-w-md text-center rounded-[2px]">
-        <svg class="mx-auto mb-4 text-[#d33]" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <h2 class="text-xl sm:text-2xl font-serif text-[#202122] mb-3 border-b border-gray-300 pb-2">UNDER MAINTENANCE</h2>
-        <p class="text-[13px] sm:text-[14px] text-gray-700 leading-relaxed">Website sedang dalam perbaikan. Mohon tunggu beberapa saat lagi. Salam hangat Admin</p>
+    <div class="text-center px-6 animate-fade-in">
+        <div class="relative w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-8">
+            <svg class="animate-spin w-full h-full text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+                <path class="opacity-80" fill="#ffffff" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        
+        <h2 class="text-xl sm:text-2xl font-light text-white mb-4 tracking-[0.2em] uppercase">System Maintenance</h2>
+        <div class="w-12 h-[1px] bg-gray-600 mx-auto mb-6"></div>
+        <p class="text-[13px] sm:text-[14px] text-gray-400 font-light max-w-md mx-auto leading-relaxed">
+            Server sedang dalam pemeliharaan rutin untuk peningkatan sistem. Seluruh akses dihentikan sementara waktu. Mohon kembali beberapa saat lagi.
+        </p>
+        
+        <div class="mt-12 flex justify-center gap-3 opacity-60">
+            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" style="animation-delay: 0.2s"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" style="animation-delay: 0.4s"></div>
+        </div>
     </div>
 `;
 document.body.appendChild(layarProteksi);
