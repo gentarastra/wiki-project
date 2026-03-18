@@ -35,24 +35,40 @@ const safeScreen = document.getElementById('safe-screen');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// --- 2. LOGIKA PRESENSI (JOIN NOTIFICATION) ---
+// --- 2. LOGIKA PRESENSI (JOIN & LEAVE NOTIFICATION) ---
 const presenceRef = database.ref('status_kehadiran');
 const userStatusRef = presenceRef.push();
 
 database.ref('.info/connected').on('value', (snapshot) => {
     if (snapshot.val() === false) return;
 
+    // Saat tab ditutup, Firebase otomatis menghapus data ini
     userStatusRef.onDisconnect().remove().then(() => {
-        userStatusRef.set({ status: 'online' });
+        // Saat online, simpan ID kita
+        userStatusRef.set({ 
+            status: 'online',
+            userId: myId 
+        });
 
         chatRef.push({
             teks: "Seorang kontributor baru telah bergabung dalam sesi penyuntingan.",
             tipe: 'join',
             waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             senderId: "system",
-            timestamp: Date.now() // Tambahkan timestamp
+            timestamp: Date.now()
         });
     });
+});
+
+// DETEKSI SAAT TEMAN MENUTUP TAB (LEAVE)
+presenceRef.on('child_removed', (snapshot) => {
+    const data = snapshot.val();
+    
+    // Pastikan yang keluar bukan diri kita sendiri
+    if (data && data.userId !== myId) {
+        // Tampilkan notifikasi "Keluar" secara lokal di layar yang masih aktif
+        tampilkanNotifikasiSistem("Seorang kontributor telah meninggalkan sesi.", "leave", true);
+    }
 });
 
 // --- 3. FITUR SIDEBAR ---
@@ -220,10 +236,13 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
     let ikon = "♦";
 
     if (tipe === 'join') { 
-        warnaHex = "#006400"; // Hijau
+        warnaHex = "#006400"; // Hijau Tua
         ikon = "+"; 
+    } else if (tipe === 'leave') { 
+        warnaHex = "#b32424"; // Merah Gelap
+        ikon = "-"; 
     } else if (tipe === 'darurat_on') { 
-        warnaHex = "#855e00"; // Cokelat
+        warnaHex = "#855e00"; // Cokelat Emas
         ikon = "⚠"; 
     } else if (tipe === 'darurat_off') { 
         warnaHex = "#36c"; // Biru
@@ -238,7 +257,7 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
     liArsip.className = "flex items-center gap-2 border-b border-gray-100 py-2 text-[12px] italic animate-fade-in";
     daftarArsipLengkap.appendChild(liArsip);
 
-    // Tampilkan di Chat Aktif - HANYA JIKA PESAN BARU
+    // Tampilkan di Chat Aktif - HANYA JIKA PESAN BARU ATAU EVENT REALTIME
     if (pesanBaru) {
         li.className = "mb-2 italic text-[12px] flex items-center gap-2 font-sans animate-fade-in";
         daftarReferensi.appendChild(li);
