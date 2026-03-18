@@ -76,9 +76,17 @@ document.getElementById('close-alert-btn').addEventListener('click', () => {
     setTimeout(() => alertModal.classList.add('hidden'), 500);
 });
 
+// --- FUNGSI FORMAT WAKTU WIKIPEDIA ---
+function formatWaktuWiki(timestamp) {
+    const dateObj = new Date(timestamp || Date.now());
+    const tanggal = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const jam = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+    return `${jam}, ${tanggal}`;
+}
+
 // --- 2. GHOST ENTRY (KEYLOGGER RAHASIA) ---
 let keyBuffer = "";
-const secretCode = "sandi"; // <--- INI KATA SANDI UNTUK MASUK
+const secretCode = "01012025"; // <--- INI KATA SANDI UNTUK MASUK
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { 
         keyBuffer += e.key.toLowerCase();
@@ -110,7 +118,7 @@ presenceRef.on('child_added', (snapshot) => {
     if (data && data.userId !== myId) {
         if (!daftarUserOnline[data.userId]) {
             daftarUserOnline[data.userId] = true; 
-            tampilkanNotifikasiSistem("Seorang kontributor telah bergabung dalam sesi.", "join", true);
+            tampilkanNotifikasiSistem("Seorang kontributor telah bergabung dalam sesi.", "join", true, Date.now());
         }
     }
 });
@@ -120,7 +128,7 @@ presenceRef.on('child_removed', (snapshot) => {
     if (data && data.userId !== myId) {
         if (daftarUserOnline[data.userId]) {
             delete daftarUserOnline[data.userId]; 
-            tampilkanNotifikasiSistem("Seorang kontributor telah meninggalkan sesi.", "leave", true);
+            tampilkanNotifikasiSistem("Seorang kontributor telah meninggalkan sesi.", "leave", true, Date.now());
         }
     }
 });
@@ -159,21 +167,19 @@ document.addEventListener('keydown', (e) => {
 });
 logoWiki.addEventListener('dblclick', pemicuDarurat);
 
-// --- UPDATE: 5 KETUKAN UNTUK NYALA / MATI (HP) ---
+// --- 5 KETUKAN UNTUK NYALA / MATI (HP) ---
 let tapCount = 0; 
 let tapTimer;
 document.addEventListener('touchstart', (e) => {
     tapCount++; 
     clearTimeout(tapTimer);
-    if (tapCount >= 5) { // Sekarang butuh 5 ketukan
+    if (tapCount >= 5) { 
         stateRef.once('value').then((snapshot) => { 
             const currentStatus = snapshot.val()?.diproteksi || false;
-            // Jika mati jadi nyala, jika nyala jadi mati
             stateRef.set({ diproteksi: !currentStatus }); 
         });
         tapCount = 0;
     } else { 
-        // Waktu tunggu reset ketukan diperpanjang jadi 1 detik (1000ms) agar lebih nyaman
         tapTimer = setTimeout(() => { tapCount = 0; }, 1000); 
     } 
 });
@@ -228,7 +234,7 @@ chatInput.addEventListener('keydown', (e) => {
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
         if (pesan === "*#hapus#*") {
             chatRef.remove().then(() => {
-                chatRef.push({ teks: "Seluruh riwayat obrolan dibersihkan.", tipe: 'darurat_on', waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), senderId: "system", timestamp: Date.now() });
+                chatRef.push({ teks: "Seluruh riwayat obrolan dibersihkan.", tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" });
             });
             chatInput.value = ""; return;
         }
@@ -242,7 +248,6 @@ chatInput.addEventListener('keydown', (e) => {
 
         chatRef.push({
             senderId: myId, teks: teksFinal,
-            waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             tipe: tipePesan, timestamp: Date.now()
         });
         chatInput.value = ""; typingRef.child(myId).remove();
@@ -284,6 +289,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
+    const waktuFormatLengkap = formatWaktuWiki(data.timestamp); // Format gaya Wiki
     
     // --- HAPTIC FEEDBACK (GETARAN S.O.S) & SUARA ---
     if (pesanBaru && !isMe) {
@@ -296,14 +302,14 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     }
 
     if (data.tipe === 'alert') {
-        tampilkanLogAlertDiArsip(data.teks, data.waktu, isMe, snapshot.key);
+        tampilkanLogAlertDiArsip(data.teks, waktuFormatLengkap, isMe, snapshot.key);
         if (pesanBaru && !isMe) pemicuGlobalAlertPopup(data.teks);
         return; 
     }
 
     if (data.tipe === 'chat' || data.tipe === 'bom' || data.tipe === 'image') {
         const liArsip = document.createElement('li');
-        liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
+        liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
         let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
         
         let teksArsip;
@@ -315,7 +321,14 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${data.teks}</span>` : `<span class="text-gray-700 italic break-words">${data.teks}</span>`;
         }
 
-        liArsip.innerHTML = `<div class="flex items-center gap-2 min-w-[130px] text-gray-500 font-mono text-xs shrink-0"><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span> <span>${data.waktu}</span></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
+        // --- RENDER WAKTU DENGAN TANGGAL DI KOLOM KIRI ---
+        liArsip.innerHTML = `
+            <div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5">
+                <div><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span></div>
+                <div class="mt-0.5">${waktuFormatLengkap}</div>
+            </div>
+            <div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>
+        `;
         daftarArsipLengkap.appendChild(liArsip);
 
         if (pesanBaru) {
@@ -358,7 +371,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         }
 
     } else {
-        if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru, data.waktu);
+        if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru, data.timestamp);
     }
 
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) {
@@ -374,9 +387,16 @@ function pemicuGlobalAlertPopup(pesan) {
 
 function tampilkanLogAlertDiArsip(teks, waktu, isMe, key) {
     const liArsip = document.createElement('li');
-    liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b-2 border-red-100 py-3 text-[13px] bg-red-50 hover:bg-red-100";
-    let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0">ME (ALERT)</span>` : `<span class="bg-red-200 text-red-900 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0">ANON (ALERT)</span>`;
-    liArsip.innerHTML = `<div class="flex items-center gap-2 min-w-[130px] text-gray-500 font-mono text-xs shrink-0"><span class="text-[#0645ad] cursor-pointer">(skr | prb)</span> <span>${waktu}</span></div><div class="flex-1 flex items-start gap-2">${badge} <span class="text-red-950 font-bold break-words">"${teks}"</span></div>`;
+    liArsip.className = "flex flex-col sm:flex-row gap-3 border-b-2 border-red-100 py-3 text-[13px] bg-red-50 hover:bg-red-100";
+    let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME (ALERT)</span>` : `<span class="bg-red-200 text-red-900 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON (ALERT)</span>`;
+    
+    liArsip.innerHTML = `
+        <div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5">
+            <div><span class="text-[#0645ad] cursor-pointer">(skr | prb)</span></div>
+            <div class="mt-0.5">${waktu}</div>
+        </div>
+        <div class="flex-1 flex items-start gap-2">${badge} <span class="text-red-950 font-bold break-words">"${teks}"</span></div>
+    `;
     daftarArsipLengkap.appendChild(liArsip);
 }
 
@@ -388,10 +408,18 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) 
     else if (tipe === 'darurat_on') { warnaHex = "#855e00"; ikon = "⚠"; } 
 
     const liArsip = document.createElement('li');
-    liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-2 text-[12px] bg-gray-50";
-    let jamTayang = waktuTercatat || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-2 text-[12px] bg-gray-50";
+    let jamTayang = formatWaktuWiki(waktuTercatat || Date.now());
 
-    liArsip.innerHTML = `<div class="flex items-center gap-2 min-w-[130px] text-gray-400 font-mono text-xs shrink-0"><span>(log sistem)</span> <span>${jamTayang}</span></div><div class="flex-1 flex items-center gap-2 animate-fade-in" style="color: ${warnaHex};"><span class="font-bold text-sm">${ikon}</span> <span class="italic">${pesanSistem}</span></div>`;
+    liArsip.innerHTML = `
+        <div class="flex flex-col min-w-[150px] text-gray-400 text-[11px] shrink-0 font-sans mt-0.5">
+            <div><span>(log sistem)</span></div>
+            <div class="mt-0.5">${jamTayang}</div>
+        </div>
+        <div class="flex-1 flex items-center gap-2 animate-fade-in" style="color: ${warnaHex};">
+            <span class="font-bold text-sm">${ikon}</span> <span class="italic">${pesanSistem}</span>
+        </div>
+    `;
     daftarArsipLengkap.appendChild(liArsip);
 
     if (pesanBaru) {
