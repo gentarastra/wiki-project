@@ -184,27 +184,39 @@ chatInput.addEventListener('keydown', (e) => {
 });
 
 // --- 7. LISTENER REALTIME (RENDER DATA) ---
-chatRef.limitToLast(30).on('child_added', (snapshot) => {
+chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
-    
-    // Cek apakah pesan baru (untuk layar chat rahasia)
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     
     if (data.tipe === 'chat') {
-        // --- ARSIP LENGKAP ---
+        // --- DESAIN BARU HALAMAN ARSIP (Selalu Tampil) ---
         const liArsip = document.createElement('li');
-        liArsip.className = "flex items-start gap-2 border-b border-gray-100 py-2 text-[13px] hover:bg-gray-50";
-        let pengirimArsip = isMe ? `<b class="text-[#0645ad]">Me</b>` : `<b class="text-[#b32424]">Anonymous</b>`;
-        let teksArsip = isMe ? `<span class="text-gray-900 font-medium">"${data.teks}"</span>` : `<span class="italic text-gray-600">"${data.teks}"</span>`;
+        // Layout rapi dengan Flexbox, hover effect, dan garis pemisah yang lembut
+        liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
+        
+        // Badge pengirim agar sangat mudah dibedakan
+        let badge = isMe 
+            ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` 
+            : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
+        
+        // Teks chat
+        let teksArsip = isMe 
+            ? `<span class="text-gray-900 font-medium break-words">${data.teks}</span>` 
+            : `<span class="text-gray-700 italic break-words">${data.teks}</span>`;
 
         liArsip.innerHTML = `
-            <span class="text-[#0645ad]">(skr | prb)</span> 
-            <span class="text-gray-500 w-12 font-mono shrink-0">${data.waktu}</span> 
-            <div class="flex-1">${pengirimArsip} . . ${teksArsip}</div>`;
+            <div class="flex items-center gap-2 min-w-[130px] text-gray-500 font-mono text-xs shrink-0">
+                <span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span> 
+                <span>${data.waktu}</span>
+            </div>
+            <div class="flex-1 flex items-start gap-2">
+                ${badge}
+                ${teksArsip}
+            </div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
-        // --- LAYAR RAHASIA (HANYA PESAN BARU) ---
+        // --- LAYAR RAHASIA (Hanya Pesan Baru) ---
         if (pesanBaru) {
             const liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
@@ -218,18 +230,21 @@ chatRef.limitToLast(30).on('child_added', (snapshot) => {
         }
 
     } else {
-        // JIKA BUKAN CHAT (Misal Boss Key dari device lain)
-        // Kita tidak mau memunculkan Boss Key lama saat refresh, jadi difilter juga
-        if (pesanBaru) tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru);
+        // JIKA BUKAN CHAT (Sistem Log)
+        if (pesanBaru || !pesanBaru) { // Kita tetap render log sistem di Arsip
+            tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru, data.waktu);
+        }
     }
 
+    // Auto-scroll hanya jika kita mendapat pesan baru
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 });
 
 // --- 8. FUNGSI LOG SISTEM ---
-function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
+// Menambahkan parameter 'waktu' agar log sistem di arsip punya jam yang akurat
+function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) {
     const li = document.createElement('li');
     let warnaHex = "#72777d"; 
     let ikon = "♦";
@@ -248,17 +263,30 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
         ikon = "✅"; 
     }
 
-    li.style.color = warnaHex;
-    li.innerHTML = `<span style="font-weight: bold;">${ikon}</span> <span>${pesanSistem}</span>`;
+    // --- DESAIN BARU UNTUK ARSIP LOG SISTEM ---
+    const liArsip = document.createElement('li');
+    // Memakai background abu-abu sangat muda (bg-gray-50) agar terpisah dari obrolan
+    liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-2 text-[12px] bg-gray-50";
     
-    // Tampilkan ke layar Arsip
-    const liArsip = li.cloneNode(true);
-    liArsip.className = "flex items-center gap-2 border-b border-gray-100 py-2 text-[12px] italic animate-fade-in";
+    // Gunakan waktu saat ini jika waktuTercatat kosong (untuk realtime)
+    let jamTayang = waktuTercatat || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    liArsip.innerHTML = `
+        <div class="flex items-center gap-2 min-w-[130px] text-gray-400 font-mono text-xs shrink-0">
+            <span>(log sistem)</span>
+            <span>${jamTayang}</span>
+        </div>
+        <div class="flex-1 flex items-center gap-2 animate-fade-in" style="color: ${warnaHex};">
+            <span class="font-bold text-sm">${ikon}</span>
+            <span class="italic">${pesanSistem}</span>
+        </div>`;
     daftarArsipLengkap.appendChild(liArsip);
 
-    // Tampilkan di layar Chat jika ini pesan/event baru
+    // --- TAMPILKAN DI LAYAR RAHASIA (Hanya Jika Baru) ---
     if (pesanBaru) {
+        li.style.color = warnaHex;
         li.className = "mb-2 italic text-[12px] flex items-center gap-2 font-sans animate-fade-in";
+        li.innerHTML = `<span style="font-weight: bold;">${ikon}</span> <span>${pesanSistem}</span>`;
         daftarReferensi.appendChild(li);
         if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
     }
