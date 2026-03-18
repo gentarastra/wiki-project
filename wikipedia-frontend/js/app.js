@@ -172,20 +172,32 @@ chatRef.limitToLast(30).on('child_added', (snapshot) => {
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     
     if (data.tipe === 'chat') {
-        // Tampilkan di Halaman Riwayat (Arsip) - SELALU DITAMPILKAN
+        // --- RENDER KE HALAMAN ARSIP (Selalu Tampil) ---
         const liArsip = document.createElement('li');
-        liArsip.className = "flex items-start gap-2 border-b border-gray-100 py-2 text-[13px]";
+        liArsip.className = "flex items-start gap-2 border-b border-gray-100 py-2 text-[13px] hover:bg-gray-50";
+        
+        let pengirimArsip = isMe ? `<b class="text-[#0645ad]">Me</b>` : `<b class="text-[#b32424]">Anonymous</b>`;
+        let teksArsip = isMe ? `<span class="text-gray-900 font-medium">"${data.teks}"</span>` : `<span class="italic text-gray-600">"${data.teks}"</span>`;
+
         liArsip.innerHTML = `
             <span class="text-[#0645ad]">(skr | prb)</span> 
-            <span class="text-gray-500 w-12 font-mono">${data.waktu}</span> 
-            <div class="flex-1"><b>${isMe ? 'Me' : 'Anonymous'}</b> . . <span class="${isMe ? '' : 'italic text-blue-900'}">"${data.teks}"</span></div>`;
+            <span class="text-gray-500 w-12 font-mono shrink-0">${data.waktu}</span> 
+            <div class="flex-1">${pengirimArsip} . . ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
-        // Tampilkan di Layar Chat Aktif (Referensi) - HANYA JIKA PESAN BARU
+        // --- RENDER KE HALAMAN RAHASIA (Hanya Pesan Baru) ---
         if (pesanBaru) {
             const liRef = document.createElement('li');
-            liRef.className = "mb-2 animate-fade-in";
-            liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^</span> ${isMe ? '<b>' : '<i>'}"${data.teks}"${isMe ? '</b>' : '</i>'}. Diakses pada 2026.`;
+            liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
+            
+            if (isMe) {
+                // GAYA PESAN KAMU: Teks Hitam Medium + "Arsip Pribadi"
+                liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${data.teks}"</span>. <i>Arsip Pribadi</i>, 2026.`;
+            } else {
+                // GAYA PESAN TEMAN: Teks Biru Miring + "Sumber Luar"
+                liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${data.teks}"</span>. <i>Sumber Luar</i>, 2026.`;
+            }
+
             daftarReferensi.appendChild(liRef);
             if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
         }
