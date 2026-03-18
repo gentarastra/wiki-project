@@ -4,14 +4,12 @@ const firebaseConfig = {
     authDomain: "wiki-project-b88d2.firebaseapp.com",
     databaseURL: "https://wiki-project-b88d2-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "wiki-project-b88d2",
-    storageBucket: "wiki-project-b88d2.firebasestorage.app", // Wajib untuk upload gambar
     messagingSenderId: "415075792805",
     appId: "1:415075792805:web:6d63fe39fd3e07fe811a4c"
 };
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-const storage = firebase.storage(); // Inisialisasi Firebase Storage
 const chatRef = database.ref('wiki_history'); 
 const stateRef = database.ref('status_global'); 
 const typingRef = database.ref('status_mengetik');
@@ -21,7 +19,7 @@ const waktuMulaiSesi = Date.now();
 // KUNCI RAHASIA E2EE (Enkripsi End-to-End)
 const KUNCI_ENKRIPSI = "ProtokolSandiNusantara2026";
 
-// --- 1. FITUR KEAMANAN BARU: ENKRIPSI & DEKRIPSI ---
+// --- 1. FITUR KEAMANAN: ENKRIPSI & DEKRIPSI ---
 function enkripsiPesan(teksAsli) {
     return CryptoJS.AES.encrypt(teksAsli, KUNCI_ENKRIPSI).toString();
 }
@@ -33,9 +31,9 @@ function dekripsiPesan(teksEnkripsi) {
     } catch (e) { return teksEnkripsi; }
 }
 
-// --- 2. FITUR BARU: AUTO-DESTRUCT 24 JAM ---
+// --- 2. FITUR PENGHANCUR OTOMATIS 24 JAM ---
 function jalankanPembersihOtomatis() {
-    const batasWaktu = Date.now() - (24 * 60 * 60 * 1000); 
+    const batasWaktu = Date.now() - (24 * 60 * 60 * 1000); // Batas 24 Jam
     chatRef.once('value', (snapshot) => {
         snapshot.forEach((child) => {
             if (child.val().timestamp < batasWaktu) chatRef.child(child.key).remove(); 
@@ -44,26 +42,7 @@ function jalankanPembersihOtomatis() {
 }
 jalankanPembersihOtomatis(); 
 
-// --- 3. FITUR BARU: KAMUFLASE DINAMIS (WIKIPEDIA ASLI) ---
-async function muatArtikelWikipediaDinamis() {
-    try {
-        const response = await fetch('https://id.wikipedia.org/api/rest_v1/page/random/summary');
-        const data = await response.json();
-        const wadahKonten = document.getElementById('halaman-utama');
-        if (wadahKonten && data.title && data.extract) {
-            wadahKonten.innerHTML = `
-                <h1 id="judul-artikel" class="text-3xl font-serif text-gray-900 border-b border-gray-300 pb-2 mb-4 font-normal mt-4">${data.title}</h1>
-                <div class="text-[14px] leading-[1.6] text-gray-800 font-sans">
-                    <p class="mb-4">${data.extract}</p>
-                    <p class="mb-4 text-gray-500 italic text-xs border-t pt-2 mt-8">Halaman ini dimuat secara dinamis dari Wikipedia Server.</p>
-                </div>
-            `;
-        }
-    } catch (e) { console.log("Gagal memuat artikel dinamis."); }
-}
-muatArtikelWikipediaDinamis();
-
-// --- 4. DEKLARASI ELEMEN UTAMA ---
+// --- 3. DEKLARASI ELEMEN UTAMA ---
 const menuUtama = document.getElementById('menu-utama');
 const menuRahasia = document.getElementById('menu-rahasia');
 const halamanUtama = document.getElementById('halaman-utama');
@@ -76,37 +55,8 @@ const sidebarKiri = document.getElementById('sidebar-kiri');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
+// Hilangkan tombol rahasia secara paksa
 if(menuRahasia) menuRahasia.style.display = "none";
-
-// --- 5. FITUR BARU: UPLOAD GAMBAR TERSEMBUNYI ---
-const fileInput = document.createElement('input');
-fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.className = 'hidden';
-document.body.appendChild(fileInput);
-
-fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    chatInput.placeholder = "Mengunggah sandi visual...";
-    chatInput.disabled = true;
-
-    try {
-        const storageRef = storage.ref(`arsip_rahasia/${Date.now()}_${file.name}`);
-        await storageRef.put(file);
-        const downloadURL = await storageRef.getDownloadURL();
-        
-        // Kirim link gambar secara E2EE
-        chatRef.push({
-            senderId: myId, 
-            teks: enkripsiPesan(downloadURL),
-            tipe: 'image', 
-            timestamp: Date.now()
-        });
-    } catch (error) { alert("Gagal mengunggah: " + error.message); }
-    
-    chatInput.placeholder = "Ketik rahasia... (/upload untuk gambar)";
-    chatInput.disabled = false; fileInput.value = ""; 
-});
 
 // --- BIKIN ELEMEN LAYAR BLUR PROTEKSI & MODAL ALERT ---
 const layarProteksi = document.createElement('div');
@@ -144,7 +94,7 @@ function formatWaktuWiki(timestamp) {
     return `${jam}, ${tanggal}`;
 }
 
-// --- 6. GHOST ENTRY & PRESENSI ---
+// --- 4. GHOST ENTRY & PRESENSI ---
 let keyBuffer = ""; const secretCode = "sandi"; 
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { 
@@ -163,7 +113,7 @@ database.ref('.info/connected').on('value', (snapshot) => {
 presenceRef.on('child_added', (snapshot) => { const data = snapshot.val(); if (data && data.userId !== myId) { if (!daftarUserOnline[data.userId]) { daftarUserOnline[data.userId] = true; tampilkanNotifikasiSistem("Seorang kontributor bergabung.", "join", true, Date.now()); } } });
 presenceRef.on('child_removed', (snapshot) => { const data = snapshot.val(); if (data && data.userId !== myId) { if (daftarUserOnline[data.userId]) { delete daftarUserOnline[data.userId]; tampilkanNotifikasiSistem("Seorang kontributor keluar.", "leave", true, Date.now()); } } });
 
-// --- 7. PANIC TAB & 5 KETUKAN HP ---
+// --- 5. PANIC TAB & 5 KETUKAN HP ---
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) document.title = "Google"; 
     else { stateRef.once('value').then((snapshot) => { if (snapshot.val()?.diproteksi) document.title = "System Maintenance"; else updateJudulHalaman(); }); }
@@ -203,28 +153,23 @@ function updateJudulHalaman() {
     else document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
 }
 
-// --- 8. NAVIGASI ---
+// --- 6. NAVIGASI ---
 function jalankanLoading(callback) { chatInput.placeholder = "Memuat..."; chatInput.classList.add('opacity-50'); setTimeout(() => { chatInput.classList.remove('opacity-50'); if(callback) callback(); }, 400); }
 function gantiHalaman(tujuan) {
     halamanUtama.classList.add('hidden'); halamanRahasia.classList.add('hidden'); halamanRiwayat.classList.add('hidden'); tujuan.classList.remove('hidden');
-    if (tujuan === halamanRahasia) { chatInput.placeholder = "Ketik rahasia... (/upload)"; chatInput.focus(); } else { chatInput.placeholder = "Telusuri Wikipedia"; }
+    if (tujuan === halamanRahasia) { chatInput.placeholder = "Ketik rahasia..."; chatInput.focus(); } else { chatInput.placeholder = "Telusuri Wikipedia"; }
     updateJudulHalaman(); if (window.innerWidth < 768) sidebarKiri.classList.add('hidden');
 }
 menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 9. LOGIKA KIRIM CHAT ---
+// --- 7. LOGIKA KIRIM CHAT (E2EE) ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
         if (pesan === "") return;
 
-        if (pesan === "/upload" && !halamanRahasia.classList.contains('hidden')) {
-            fileInput.click(); chatInput.value = ""; return;
-        }
-
         if (halamanRahasia.classList.contains('hidden')) { window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; return; }
-
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
         if (pesan === "*#hapus#*") {
             chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" }));
@@ -243,7 +188,7 @@ chatInput.addEventListener('keydown', (e) => {
 
 chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
 
-// --- 10. TYPING & AUDIO/HAPTIC ---
+// --- 8. TYPING & AUDIO/HAPTIC ---
 let typingTimer;
 chatInput.addEventListener('input', () => {
     if (!halamanRahasia.classList.contains('hidden')) { typingRef.child(myId).set(true); clearTimeout(typingTimer); typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000); }
@@ -265,7 +210,7 @@ function mainkanSuaraKlik() {
     } catch(e) {}
 }
 
-// --- 11. RENDER REALTIME (SEMUA FITUR DIGABUNG) ---
+// --- 9. RENDER REALTIME (DEKRIPSI & FORMAT WIKI) ---
 chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
