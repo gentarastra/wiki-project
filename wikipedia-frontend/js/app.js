@@ -78,7 +78,7 @@ document.getElementById('close-alert-btn').addEventListener('click', () => {
 
 // --- 2. GHOST ENTRY (KEYLOGGER RAHASIA) ---
 let keyBuffer = "";
-const secretCode = "sandi"; // <--- INI KATA SANDI UNTUK MASUK
+const secretCode = "01012025"; // <--- INI KATA SANDI UNTUK MASUK
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { // Hanya rekam ketikan huruf/angka
         keyBuffer += e.key.toLowerCase();
