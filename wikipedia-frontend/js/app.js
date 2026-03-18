@@ -18,6 +18,9 @@ const database = firebase.database();
 const chatRef = database.ref('wiki_history'); 
 const myId = Math.random().toString(36).substring(7);
 
+// PENANDA WAKTU SESI (Untuk membedakan chat lama dan chat baru)
+const waktuMulaiSesi = Date.now();
+
 // --- 1. DEKLARASI ELEMEN ---
 const menuUtama = document.getElementById('menu-utama');
 const menuRahasia = document.getElementById('menu-rahasia');
@@ -40,17 +43,14 @@ database.ref('.info/connected').on('value', (snapshot) => {
     if (snapshot.val() === false) return;
 
     userStatusRef.onDisconnect().remove().then(() => {
-        userStatusRef.set({
-            status: 'online',
-            waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-        });
+        userStatusRef.set({ status: 'online' });
 
-        // Kirim notifikasi join ke database
         chatRef.push({
             teks: "Seorang kontributor baru telah bergabung dalam sesi penyuntingan.",
             tipe: 'join',
             waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            senderId: "system"
+            senderId: "system",
+            timestamp: Date.now() // Tambahkan timestamp
         });
     });
 });
@@ -79,12 +79,12 @@ function pemicuDarurat() {
     if (isSafeMode) {
         safeScreen.classList.remove('hidden');
         document.title = "404 Not Found";
-        // Kirim log darurat ke teman lain
         chatRef.push({
             teks: "Perlindungan halaman aktif (Halaman diproteksi).",
             tipe: 'darurat_on',
             waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            senderId: "system"
+            senderId: "system",
+            timestamp: Date.now() // Tambahkan timestamp
         });
     } else {
         safeScreen.classList.add('hidden');
@@ -93,7 +93,8 @@ function pemicuDarurat() {
             teks: "Perlindungan halaman dicabut.",
             tipe: 'darurat_off',
             waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            senderId: "system"
+            senderId: "system",
+            timestamp: Date.now() // Tambahkan timestamp
         });
     }
 }
@@ -154,7 +155,8 @@ chatInput.addEventListener('keydown', (e) => {
                 senderId: myId,
                 teks: pesan,
                 waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-                tipe: 'chat'
+                tipe: 'chat',
+                timestamp: Date.now() // Tambahkan timestamp
             });
             chatInput.value = "";
         }
@@ -162,19 +164,15 @@ chatInput.addEventListener('keydown', (e) => {
 });
 
 // --- 7. LISTENER REALTIME (RENDER DATA) ---
-chatRef.limitToLast(25).on('child_added', (snapshot) => {
+chatRef.limitToLast(30).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
     
+    // Cek apakah pesan ini dikirim SETELAH kita membuka web
+    const pesanBaru = data.timestamp >= waktuMulaiSesi;
+    
     if (data.tipe === 'chat') {
-        // Tampilkan di Halaman Rahasia (Referensi)
-        const liRef = document.createElement('li');
-        liRef.className = "mb-2 animate-fade-in";
-        liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^</span> ${isMe ? '<b>' : '<i>'}"${data.teks}"${isMe ? '</b>' : '</i>'}. Diakses pada 2026.`;
-        daftarReferensi.appendChild(liRef);
-        if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
-
-        // Tampilkan di Halaman Riwayat (Arsip)
+        // Tampilkan di Halaman Riwayat (Arsip) - SELALU DITAMPILKAN
         const liArsip = document.createElement('li');
         liArsip.className = "flex items-start gap-2 border-b border-gray-100 py-2 text-[13px]";
         liArsip.innerHTML = `
@@ -183,27 +181,37 @@ chatRef.limitToLast(25).on('child_added', (snapshot) => {
             <div class="flex-1"><b>${isMe ? 'Me' : 'Anonymous'}</b> . . <span class="${isMe ? '' : 'italic text-blue-900'}">"${data.teks}"</span></div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
+        // Tampilkan di Layar Chat Aktif (Referensi) - HANYA JIKA PESAN BARU
+        if (pesanBaru) {
+            const liRef = document.createElement('li');
+            liRef.className = "mb-2 animate-fade-in";
+            liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^</span> ${isMe ? '<b>' : '<i>'}"${data.teks}"${isMe ? '</b>' : '</i>'}. Diakses pada 2026.`;
+            daftarReferensi.appendChild(liRef);
+            if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
+        }
+
     } else {
         // JIKA TIPE BUKAN CHAT (SISTEM/JOIN)
-        tampilkanNotifikasiSistem(data.teks, data.tipe);
+        tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru);
     }
 
-    if (!halamanRahasia.classList.contains('hidden')) {
+    // Auto-scroll hanya jika kita mendapat pesan baru
+    if (pesanBaru && !halamanRahasia.classList.contains('hidden')) {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 });
 
-// --- 8. FUNGSI LOG SISTEM (HIJAU/COKELAT/BIRU) ---
-function tampilkanNotifikasiSistem(pesanSistem, tipe) {
+// --- 8. FUNGSI LOG SISTEM (DENGAN FILTER PESAN BARU) ---
+function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru) {
     const li = document.createElement('li');
     let warnaHex = "#72777d"; 
     let ikon = "♦";
 
     if (tipe === 'join') { 
-        warnaHex = "#006400"; // Hijau Tua
+        warnaHex = "#006400"; // Hijau
         ikon = "+"; 
     } else if (tipe === 'darurat_on') { 
-        warnaHex = "#855e00"; // Cokelat Emas
+        warnaHex = "#855e00"; // Cokelat
         ikon = "⚠"; 
     } else if (tipe === 'darurat_off') { 
         warnaHex = "#36c"; // Biru
@@ -211,12 +219,17 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe) {
     }
 
     li.style.color = warnaHex;
-    li.className = "mb-2 italic text-[12px] flex items-center gap-2 font-sans animate-fade-in";
     li.innerHTML = `<span style="font-weight: bold;">${ikon}</span> <span>${pesanSistem}</span>`;
     
-    // Duplikasi ke Referensi & Arsip
-    daftarReferensi.appendChild(li);
+    // Duplikasi ke Arsip - SELALU DITAMPILKAN
     const liArsip = li.cloneNode(true);
     liArsip.className = "flex items-center gap-2 border-b border-gray-100 py-2 text-[12px] italic animate-fade-in";
     daftarArsipLengkap.appendChild(liArsip);
+
+    // Tampilkan di Chat Aktif - HANYA JIKA PESAN BARU
+    if (pesanBaru) {
+        li.className = "mb-2 italic text-[12px] flex items-center gap-2 font-sans animate-fade-in";
+        daftarReferensi.appendChild(li);
+        if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
+    }
 }
