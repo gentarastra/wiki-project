@@ -1,0 +1,5 @@
+/* Styling standar, bisa dibiarkan kosong karena kita banyak pakai Tailwind di HTML */
+body {
+    margin: 0;
+    padding: 0;
+}

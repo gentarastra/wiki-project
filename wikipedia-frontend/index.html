@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikipedia bahasa Indonesia, ensiklopedia bebas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Efek Fokus Khas Wikipedia */
+        .vector-search:focus { 
+            box-shadow: inset 0 0 0 1px #36c, inset 0 0 0 2px #36c; 
+        }
+        .vector-menu:hover { 
+            background-color: #eaecf0; 
+            border-radius: 2px; 
+        }
+        /* Scrollbar Halus agar Tetap Estetik */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #c8ccd1; border-radius: 4px; }
+        
+        /* Animasi Transisi Halaman */
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-white text-[#202122] font-sans h-screen flex flex-col overflow-hidden" id="main-body">
+
+    <header class="flex items-center justify-between px-3 md:px-6 py-2 border-b border-gray-200 bg-white z-40 shadow-sm gap-2 md:gap-4 relative">
+        <div class="flex items-center gap-2 md:gap-4 shrink-0">
+            <div id="tombol-menu" class="cursor-pointer p-2 vector-menu rounded">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 3h18v2H1V3zm0 6h18v2H1V9zm0 6h18v2H1v-2z" fill="#000"/>
+                </svg>
+            </div>
+            <div id="logo-wiki" class="flex items-end space-x-2 cursor-pointer">
+                <span class="font-serif text-xl md:text-2xl font-bold tracking-tight">WIKIPEDIA</span>
+            </div>
+        </div>
+
+        <div class="flex-1 w-full max-w-2xl relative min-w-0">
+            <input type="text" id="rahasia-input" 
+                class="w-full bg-[#f8f9fa] border border-[#a2a9b1] rounded-[2px] py-1.5 pl-9 pr-3 text-[13px] md:text-sm text-gray-800 transition-all focus:bg-white focus:outline-none vector-search" 
+                placeholder="Telusuri Wikipedia" autocomplete="off">
+            <svg class="absolute left-3 top-2 md:top-2.5" width="16" height="16" viewBox="0 0 20 20" fill="#72777d" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.2 13.6a7 7 0 111.4-1.4l5.4 5.4-1.4 1.4-5.4-5.4zM8 13a5 5 0 100-10 5 5 0 000 10z"/>
+            </svg>
+        </div>
+
+        <div class="flex space-x-3 md:space-x-4 text-[13px] md:text-sm text-[#0645ad] shrink-0">
+            <span class="cursor-pointer hover:underline hidden md:block text-gray-500">Bicara</span>
+            <span class="cursor-pointer hover:underline font-bold">Masuk</span>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative" id="app-container">
+        
+        <div id="sidebar-kiri" class="w-48 bg-[#f8f9fa] md:bg-white h-full p-4 pl-6 hidden absolute md:relative z-30 shadow-xl md:shadow-none border-r border-gray-200 overflow-y-auto">
+            <div class="text-[13px] text-gray-500 mb-2 mt-2 md:mt-0 font-semibold uppercase tracking-wider">Navigasi</div>
+            <ul class="text-[14px] text-[#0645ad] space-y-3 md:space-y-2 mb-8 border-b border-gray-200 pb-4">
+                <li class="cursor-pointer hover:underline" id="menu-utama">Halaman Utama</li>
+                <li class="cursor-pointer hover:underline">Daftar isi</li>
+                <li class="cursor-pointer hover:underline" id="menu-rahasia">Peristiwa terkini</li>
+                <li class="cursor-pointer hover:underline">Artikel sembarang</li>
+            </ul>
+            <div class="text-[13px] text-gray-500 mb-2 font-semibold uppercase tracking-wider">Komunitas</div>
+            <ul class="text-[14px] text-[#0645ad] space-y-3 md:space-y-2">
+                <li class="cursor-pointer hover:underline">Warung Kopi</li>
+                <li class="cursor-pointer hover:underline">Portal komunitas</li>
+                <li class="cursor-pointer hover:underline">Bantuan</li>
+            </ul>
+        </div>
+
+        <div class="flex-1 overflow-y-auto bg-white pt-4 md:pt-6 pb-24 w-full">
+            <div class="max-w-4xl mx-auto px-4 sm:px-8 md:px-10">
+                
+                <div id="halaman-utama" class="block animate-fade-in text-[14px] md:text-[15px] leading-[1.6]">
+                    <div class="border-b border-gray-300 pb-1 mb-4 md:mb-6">
+                        <h1 class="text-3xl md:text-4xl font-serif text-[#202122]">Bumi</h1>
+                        <div class="text-sm text-gray-600 italic">Dari Wikipedia bahasa Indonesia, ensiklopedia bebas</div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row-reverse gap-6">
+                        <aside class="w-full md:w-72 bg-[#f8f9fa] border border-[#a2a9b1] p-2 shrink-0 self-start mb-4">
+                            <table class="w-full text-[12px] border-collapse">
+                                <thead>
+                                    <tr><th colspan="2" class="bg-[#cedff2] py-2 text-sm font-bold">Bumi</th></tr>
+                                    <tr><td colspan="2" class="p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/240px-The_Earth_seen_from_Apollo_17.jpg" class="mx-auto border border-gray-300 shadow-sm" alt="Foto Bumi"></td></tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-t border-gray-200"><th class="text-left py-1 pr-2 font-bold w-1/3 text-gray-600 uppercase tracking-tighter">Ciri orbit</th><td></td></tr>
+                                    <tr><th class="text-left font-normal pl-2">Aphelion</th><td>152.100.000 km</td></tr>
+                                    <tr><th class="text-left font-normal pl-2">Perihelion</th><td>147.095.000 km</td></tr>
+                                    <tr class="border-t border-gray-200"><th class="text-left py-1 pr-2 font-bold text-gray-600 uppercase tracking-tighter">Ciri fisik</th><td></td></tr>
+                                    <tr><th class="text-left font-normal pl-2">Jari-jari rata-rata</th><td>6.371,0 km</td></tr>
+                                    <tr><th class="text-left font-normal pl-2">Massa</th><td>5,972 × 10<sup>24</sup> kg</td></tr>
+                                    <tr><th class="text-left font-normal pl-2">Atmosfer</th><td>78% Nitrogen, 21% Oksigen</td></tr>
+                                </tbody>
+                            </table>
+                        </aside>
+
+                        <div class="flex-1 text-gray-800 text-justify">
+                            <p class="mb-4">
+                                <b>Bumi</b> adalah planet ketiga dari <span class="text-[#0645ad] cursor-pointer hover:underline">Matahari</span> yang merupakan planet terpadat dan terbesar kelima dari delapan planet dalam Tata Surya. Bumi juga merupakan planet terbesar dari empat planet kebumian di Tata Surya. Terkadang Bumi disebut dengan dunia atau "Planet Biru".
+                            </p>
+
+                            <div class="inline-block bg-[#f8f9fa] border border-[#a2a9b1] p-3 mb-6 min-w-[200px]">
+                                <div class="text-center font-bold mb-2">Daftar isi</div>
+                                <ul class="text-[13px] text-[#0645ad] space-y-1">
+                                    <li><a href="#" class="hover:underline">1 Nama dan etimologi</a></li>
+                                    <li><a href="#" class="hover:underline">2 Kronologi pembentukan</a></li>
+                                    <li><a href="#" class="hover:underline">3 Komposisi kimia dan struktur</a></li>
+                                    <li><a href="#" class="hover:underline">4 Litosfer dan biosfer</a></li>
+                                </ul>
+                            </div>
+
+                            <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-6 mb-3">Nama dan etimologi</h2>
+                            <p class="mb-4">
+                                Kata "Bumi" dalam bahasa Indonesia berasal dari bahasa Sanskerta <i>bhūmi</i>, yang berarti tanah atau daratan. Nama planet ini dalam bahasa Inggris, <i>Earth</i>, berasal dari kata bahasa Inggris kuno <i>eorthe</i> yang juga merujuk pada tanah. Secara terminologi astronomi, Bumi sering diberi simbol <span class="font-mono text-lg">⊕</span>.
+                            </p>
+
+                            <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-8 mb-3">Kronologi pembentukan</h2>
+                            <p class="mb-4">
+                                Berdasarkan penanggalan radiometrik meteorit dan batuan tertua, Bumi diperkirakan terbentuk sekitar 4,54 miliar tahun yang lalu. Gravitasi Bumi berinteraksi dengan objek lain di ruang angkasa, terutama Matahari dan <span class="text-[#0645ad] cursor-pointer hover:underline">Bulan</span>, yang merupakan satu-satunya satelit alami Bumi.
+                            </p>
+                            <p class="mb-4 italic text-gray-600">
+                                Artikel utama: <span class="text-[#0645ad] cursor-pointer hover:underline">Sejarah Bumi</span>.
+                            </p>
+
+                            <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-8 mb-3">Komposisi kimia</h2>
+                            <p class="mb-4">
+                                Massa Bumi kira-kira adalah 5,97 × 10<sup>24</sup> kg. Komposisi kimianya terdiri dari Besi (32,1%), Oksigen (30,1%), Silikon (15,1%), Magnesium (13,9%), Belerang (2,9%), Nikel (1,8%), Kalsium (1,5%), dan Aluminium (1,4%); sisanya terdiri dari unsur-unsur lainnya dalam jumlah kecil.
+                            </p>
+
+                            <div class="mt-8 border-t border-gray-200 pt-4 text-[12px] text-gray-500 italic">
+                                Terakhir disunting pada 18 Maret 2026. Teks tersedia di bawah Lisensi Atribusi-BerbagiSerupa Creative Commons.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="halaman-rahasia" class="hidden animate-fade-in">
+                    <div class="flex justify-between items-end border-b border-gray-300 pb-1 mb-4 md:mb-6">
+                        <h1 class="text-3xl md:text-4xl font-serif text-[#202122]">Sejarah Nusantara</h1>
+                        <div class="flex space-x-3 text-[12px] md:text-[13px] text-[#0645ad] mb-1 hidden sm:flex">
+                            <span class="text-black font-semibold border-b-2 border-black pb-[5px]">Baca</span>
+                            <span class="cursor-pointer hover:underline">Sunting</span>
+                            <span class="cursor-pointer hover:underline">Lihat riwayat</span>
+                        </div>
+                    </div>
+
+                    <div class="text-[14px] md:text-[15px] leading-[1.6] md:leading-[1.7] text-justify text-gray-800">
+                        <p class="mb-4"><strong>Sejarah Nusantara</strong> merujuk pada rentetan peristiwa yang terjadi di kepulauan yang kini dikenal sebagai <span class="text-[#0645ad] cursor-pointer hover:underline">Indonesia</span>. Wilayah ini memiliki sejarah panjang yang diwarnai oleh interaksi berbagai budaya.</p>
+                        
+                        <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-6 md:mt-8 mb-3 md:mb-4">Kejayaan Majapahit</h2>
+                        <p class="mb-6">Kerajaan <span class="text-[#0645ad] cursor-pointer hover:underline">Majapahit</span> yang didirikan oleh Raden Wijaya pada tahun 1293 M mencapai puncak kejayaannya.</p>
+
+                        <div class="mt-8 md:mt-12 pt-5 md:pt-6 border-t border-gray-300">
+                            <h2 class="text-lg md:text-xl font-serif font-bold mb-4 text-[#202122]">Referensi</h2>
+                            <ol id="daftar-referensi" class="list-decimal pl-5 md:pl-6 text-[13px] md:text-[14px] text-gray-700 font-sans leading-relaxed">
+                                <li class="mb-2"><span class="text-[#36c] cursor-pointer">^</span> Ricklefs, M.C. (2001). <i>Sejarah Indonesia Modern</i>. Stanford University Press.</li>
+                                </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="halaman-riwayat" class="hidden animate-fade-in">
+                    <div class="flex items-end border-b border-gray-300 pb-1 mb-4 md:mb-6">
+                        <h1 class="text-2xl md:text-3xl font-serif text-[#202122]">Riwayat revisi "Sejarah Nusantara"</h1>
+                    </div>
+                    
+                    <div class="bg-[#f8f9fa] border border-[#a2a9b1] p-3 md:p-4 mb-6 text-[13px] md:text-[14px] text-gray-800 rounded-sm">
+                        <span class="font-bold">Pemeliharaan log:</span> Tampilan di bawah adalah daftar perubahan halaman yang diarsipkan untuk keperluan audit sistem. <a href="#" class="text-[#0645ad] hover:underline">Pelajari selengkapnya</a>.
+                    </div>
+
+                    <ul id="daftar-arsip-lengkap" class="text-[13px] md:text-[14px] font-sans text-gray-800 space-y-2 list-none m-0 p-0">
+                        </ul>
+                </div>
+
+            </div>
+        </div> 
+    </div>
+
+    <div id="safe-screen" class="hidden w-full h-screen bg-white p-6 md:p-12 font-sans z-50 absolute top-0 left-0 overflow-y-auto">
+        <div class="max-w-2xl mx-auto mt-16 md:mt-20 text-center px-4">
+            <svg class="mx-auto mb-4 md:mb-6 opacity-30 text-gray-400" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <h1 class="text-xl md:text-2xl font-semibold mb-2 md:mb-3">404 Not Found</h1>
+            <p class="text-[14px] md:text-base text-gray-600 mb-6">Maaf, halaman yang Anda cari tidak tersedia atau telah dipindahkan secara permanen.</p>
+            <a href="index.html" class="text-[#36c] hover:underline font-medium text-[14px] md:text-base">Kembali ke beranda</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
