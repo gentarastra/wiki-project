@@ -40,8 +40,8 @@ layarProteksi.innerHTML = `
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
         </svg>
-        <h2 class="text-xl sm:text-2xl font-serif text-[#202122] mb-3 border-b border-gray-300 pb-2">Halaman Semi-Perlindungan</h2>
-        <p class="text-[13px] sm:text-[14px] text-gray-700 leading-relaxed">Halaman ini sedang diproteksi dari penyuntingan untuk mencegah vandalisme. Mohon tunggu sebentar hingga status perlindungan dicabut oleh pengurus.</p>
+        <h2 class="text-xl sm:text-2xl font-serif text-[#202122] mb-3 border-b border-gray-300 pb-2">UNDER MAINTENANCE</h2>
+        <p class="text-[13px] sm:text-[14px] text-gray-700 leading-relaxed">Website sedang dalam perbaikan. Mohon tunggu beberapa saat lagi. Salam hangat Admin</p>
     </div>
 `;
 document.body.appendChild(layarProteksi);
