@@ -1,6 +1,6 @@
 // wikipedia-frontend/js/app.js
 
-const SOCKET_URL = "http://localhost:3000"; 
+const SOCKET_URL = "https://violet-bikes-pump.loca.lt"; 
 const socket = io(SOCKET_URL);
 
 // --- 0. DEKLARASI SEMUA ELEMEN ---
