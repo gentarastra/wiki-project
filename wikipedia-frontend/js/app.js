@@ -1,6 +1,6 @@
 // wikipedia-frontend/js/app.js
 
-const SOCKET_URL = "103.189.201.108"; 
+const SOCKET_URL = "https://shaky-nails-search.loca.lt"; 
 const socket = io(SOCKET_URL);
 
 // --- 0. DEKLARASI SEMUA ELEMEN ---
