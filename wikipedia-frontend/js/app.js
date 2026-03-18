@@ -58,16 +58,27 @@ const logoWiki = document.getElementById('logo-wiki');
 // Hilangkan tombol rahasia secara paksa
 if(menuRahasia) menuRahasia.style.display = "none";
 
-// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI & MODAL ALERT ---
+// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI (DESAIN MODERN SERVER ERROR) ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
-layarProteksi.className = "fixed inset-0 bg-[#0a0a0a]/95 backdrop-blur-xl z-[9999] flex flex-col items-center justify-center hidden transition-all duration-500";
+layarProteksi.className = "fixed inset-0 bg-[#050505] z-[9999] flex flex-col items-center justify-center hidden transition-opacity duration-300";
 layarProteksi.innerHTML = `
-    <div class="text-center px-6 animate-fade-in">
-        <div class="relative w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-8"><svg class="animate-spin w-full h-full text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle><path class="opacity-80" fill="#ffffff" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
-        <h2 class="text-xl sm:text-2xl font-light text-white mb-4 tracking-[0.2em] uppercase">System Maintenance</h2>
-        <div class="w-12 h-[1px] bg-gray-600 mx-auto mb-6"></div>
-        <p class="text-[13px] sm:text-[14px] text-gray-400 font-light max-w-md mx-auto leading-relaxed">Server pemeliharaan rutin. Mohon kembali beberapa saat lagi.</p>
+    <div class="bg-[#111] border border-gray-800 p-8 sm:p-12 rounded-lg shadow-[0_0_50px_rgba(0,0,0,0.8)] max-w-lg w-[90%] text-center animate-fade-in">
+        <div class="mb-6 flex justify-center">
+            <svg class="w-14 h-14 sm:w-16 sm:h-16 text-gray-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-light text-gray-200 tracking-[0.15em] uppercase mb-4">Service Unavailable</h1>
+        <div class="h-[1px] w-16 bg-blue-600/50 mx-auto mb-6"></div>
+        <p class="text-[13px] sm:text-[15px] text-gray-400 font-light leading-relaxed mb-8">
+            The server is temporarily unable to service your request due to maintenance downtime or routing capacity problems. Please try again later.
+        </p>
+        <div class="bg-black/50 rounded-md p-4 text-left font-mono text-[11px] sm:text-xs text-gray-500 border border-gray-800/50">
+            <p class="mb-1"><span class="text-gray-400">Error Code:</span> HTTP 503</p>
+            <p class="mb-1"><span class="text-gray-400">Node:</span> server-xjk-992</p>
+            <p><span class="text-gray-400">Status:</span> Disconnected</p>
+        </div>
     </div>`;
 document.body.appendChild(layarProteksi);
 
@@ -116,41 +127,66 @@ presenceRef.on('child_removed', (snapshot) => { const data = snapshot.val(); if 
 // --- 5. PANIC TAB & 5 KETUKAN HP ---
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) document.title = "Google"; 
-    else { stateRef.once('value').then((snapshot) => { if (snapshot.val()?.diproteksi) document.title = "System Maintenance"; else updateJudulHalaman(); }); }
+    else { stateRef.once('value').then((snapshot) => { if (snapshot.val()?.diproteksi) document.title = "503 Service Unavailable"; else updateJudulHalaman(); }); }
 });
 tombolMenu.addEventListener('click', (e) => { e.stopPropagation(); sidebarKiri.classList.toggle('hidden'); });
 document.addEventListener('click', (e) => { if (!sidebarKiri.contains(e.target) && e.target !== tombolMenu) { if (window.innerWidth < 768) sidebarKiri.classList.add('hidden'); } });
 
-// --- FITUR AUTO-LOGOUT LOKAL (PENGGANTI IDLE TIMEOUT GLOBAL) ---
+// FITUR AUTO-LOGOUT LOKAL (5 MENIT)
 let idleTimeout;
 function resetIdleTimer() {
     clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => { 
-        // Hanya bertindak jika sedang berada di Halaman Rahasia / Riwayat
         if (!halamanRahasia.classList.contains('hidden') || !halamanRiwayat.classList.contains('hidden')) {
             jalankanLoading(() => gantiHalaman(halamanUtama));
         }
-    }, 300000); // 5 Menit (300.000 ms)
+    }, 300000); 
 }
 ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => document.addEventListener(evt, resetIdleTimer));
 resetIdleTimer(); 
 
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') pemicuDarurat(); if (e.key === '`' || e.key === '~' || (e.altKey && e.key.toLowerCase() === 'z')) window.location.replace("https://classroom.google.com"); });
+// LOGIKA ESCAPE BARU (1x MASUK, 3x KELUAR)
+let escCount = 0; let escTimer;
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        stateRef.once('value').then((snapshot) => {
+            const isProtected = snapshot.val()?.diproteksi || false;
+            if (!isProtected) {
+                // Jika belum maintenance, 1x Esc langsung mengunci
+                stateRef.set({ diproteksi: true });
+            } else {
+                // Jika sedang maintenance, butuh 3x Esc cepat (dalam 1.5 detik) untuk membuka
+                escCount++; clearTimeout(escTimer);
+                if (escCount >= 3) {
+                    stateRef.set({ diproteksi: false });
+                    escCount = 0;
+                } else {
+                    escTimer = setTimeout(() => { escCount = 0; }, 1500);
+                }
+            }
+        });
+    }
+    // Tombol darurat ganti tab
+    if (e.key === '`' || e.key === '~' || (e.altKey && e.key.toLowerCase() === 'z')) window.location.replace("https://classroom.google.com"); 
+});
+
+// LOGIKA SENTUHAN HP (Biarkan tetap sama, toggle seperti biasa)
+function pemicuDarurat() { stateRef.once('value').then((snapshot) => stateRef.set({ diproteksi: !(snapshot.val()?.diproteksi || false) })); }
 logoWiki.addEventListener('dblclick', pemicuDarurat);
 
 let tapCount = 0; let tapTimer;
 document.addEventListener('touchstart', (e) => {
     tapCount++; clearTimeout(tapTimer);
     if (tapCount >= 5) { 
-        stateRef.once('value').then((snapshot) => stateRef.set({ diproteksi: !(snapshot.val()?.diproteksi || false) })); 
+        pemicuDarurat(); // Pakai toggle untuk HP
         tapCount = 0;
     } else { tapTimer = setTimeout(() => { tapCount = 0; }, 1000); } 
 });
 
-function pemicuDarurat() { stateRef.once('value').then((snapshot) => stateRef.set({ diproteksi: !(snapshot.val()?.diproteksi || false) })); }
+// LISTENER LAYAR MAINTENANCE
 stateRef.on('value', (snapshot) => {
     const data = snapshot.val();
-    if (data && data.diproteksi) { layarProteksi.classList.remove('hidden'); document.title = "System Maintenance"; chatInput.blur(); } 
+    if (data && data.diproteksi) { layarProteksi.classList.remove('hidden'); document.title = "503 Service Unavailable"; chatInput.blur(); } 
     else { layarProteksi.classList.add('hidden'); updateJudulHalaman(); }
 });
 function updateJudulHalaman() {
