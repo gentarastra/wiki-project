@@ -312,6 +312,20 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const isMe = data.senderId === myId;
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     
+    // --- HITUNG MUNDUR WAKTU BOM (Akurat dengan Server) ---
+    let waktuSisa = 10; 
+    if (data.tipe === 'bom') {
+        // Kalkulasi sisa waktu berdasarkan kapan pesan dikirim
+        waktuSisa = Math.ceil((data.timestamp + 10000 - Date.now()) / 1000);
+        
+        // Jika saat kita muat ulang halaman ternyata pesannya sudah lebih dari 10 detik,
+        // langsung musnahkan dan abaikan (jangan ditampilkan).
+        if (waktuSisa <= 0) {
+            if (isMe) chatRef.child(snapshot.key).remove();
+            return; 
+        }
+    }
+
     // Mainkan suara HANYA jika pesan baru dari orang lain dan tab sedang tidak dilihat
     if (pesanBaru && !isMe && document.hidden) {
         mainkanSuaraKlik();
@@ -323,10 +337,10 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         
         let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
         
-        // Render Teks (Jika Bom, berikan efek merah berkedip)
+        // Render Teks (Sisipkan span dengan ID khusus agar angkanya bisa diupdate tiap detik)
         let teksArsip;
         if (data.tipe === 'bom') {
-            teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 MENGHANCURKAN DALAM 10 DETIK: ${data.teks}</span>`;
+            teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 MENGHANCURKAN DALAM <span id="arsip-timer-${snapshot.key}">${waktuSisa}</span>s: ${data.teks}</span>`;
         } else {
             teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${data.teks}</span>` : `<span class="text-gray-700 italic break-words">${data.teks}</span>`;
         }
@@ -334,12 +348,13 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         liArsip.innerHTML = `<div class="flex items-center gap-2 min-w-[130px] text-gray-500 font-mono text-xs shrink-0"><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span> <span>${data.waktu}</span></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
-        let liRef; // Untuk layar Wikipedia
+        let liRef; // Untuk layar Wikipedia Utama
         if (pesanBaru) {
             liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
             if (data.tipe === 'bom') {
-                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ <sup>c</sup> "${data.teks}" (Hancur dalam 10s)</span>`;
+                // Di layar Wikipedia, kita samarkan sedikir tapi teks asli dan angka mundurnya tetap kelihatan
+                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ <sup>c</sup> "${data.teks}" [Hancur dalam: <span id="ref-timer-${snapshot.key}">${waktuSisa}</span>s]</span>`;
             } else if (isMe) {
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${data.teks}"</span>. <i>Arsip Pribadi</i>, 2026.`;
             } else {
@@ -349,14 +364,31 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
         }
 
-        // LOGIKA PENGHANCURAN PESAN BOM
+        // LOGIKA PENGHANCURAN & HITUNG MUNDUR (COUNTDOWN ANIMATION)
         if (data.tipe === 'bom') {
-            setTimeout(() => {
-                liArsip.remove();
-                if (liRef) liRef.remove();
-                // Pengirim bertanggung jawab menghapus log dari server database
-                if (isMe) chatRef.child(snapshot.key).remove();
-            }, 10000); // Tepat 10 detik
+            const timerInterval = setInterval(() => {
+                waktuSisa--;
+                
+                // Cari elemen angkanya dan ubah teksnya setiap 1 detik
+                const spanArsip = document.getElementById(`arsip-timer-${snapshot.key}`);
+                if (spanArsip) spanArsip.innerText = waktuSisa;
+                
+                const spanRef = document.getElementById(`ref-timer-${snapshot.key}`);
+                if (spanRef) spanRef.innerText = waktuSisa;
+
+                // Jika waktu habis (0), hancurkan elemen dan hentikan interval
+                if (waktuSisa <= 0) {
+                    clearInterval(timerInterval);
+                    liArsip.style.transition = "opacity 0.5s ease";
+                    liArsip.style.opacity = "0"; // Efek memudar sebelum hilang
+                    
+                    setTimeout(() => {
+                        liArsip.remove();
+                        if (liRef) liRef.remove();
+                        if (isMe) chatRef.child(snapshot.key).remove();
+                    }, 500); // Tunggu animasi memudar selesai baru dihapus dari HTML
+                }
+            }, 1000); // 1000 milidetik = 1 detik
         }
 
     } else {
