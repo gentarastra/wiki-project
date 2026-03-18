@@ -15,6 +15,35 @@ const database = firebase.database();
 const chatRef = database.ref('wiki_history'); 
 const myId = Math.random().toString(36).substring(7);
 
+// --- LOGIKA PRESENSI (ONLINE/OFFLINE) ---
+const presenceRef = database.ref('status_kehadiran');
+const userStatusRef = presenceRef.push(); // Buat ID unik untuk sesi ini
+
+// Deteksi koneksi ke server Firebase
+database.ref('.info/connected').on('value', (snapshot) => {
+    if (snapshot.val() === false) return;
+
+    // Jika koneksi putus (tab ditutup/RTO), hapus data ini otomatis dari database
+    userStatusRef.onDisconnect().remove().then(() => {
+        // Jika koneksi aktif, catat bahwa kita join
+        userStatusRef.set({
+            status: 'online',
+            waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+        });
+
+        // Kirim notifikasi "User Bergabung" ke database chat
+        chatRef.push({
+            teks: "Seorang kontributor baru telah bergabung dalam sesi penyuntingan.",
+            tipe: 'join',
+            waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+        });
+    });
+});
+
+// Catatan: Karena Firebase tidak punya event "onDisconnect" yang mengirim pesan chat,
+// notifikasi "User Keluar" biasanya sulit dibuat secara instan tanpa backend.
+// Namun, notifikasi "Join" dan "Boss Key" tetap akan muncul di Log.
+
 // --- 1. DEKLARASI ELEMEN (Sesuaikan dengan HTML) ---
 const menuUtama = document.getElementById('menu-utama');
 const menuRahasia = document.getElementById('menu-rahasia');
