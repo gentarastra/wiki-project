@@ -1,9 +1,30 @@
-// wikipedia-frontend/js/app.js
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-const SOCKET_URL = "http://localhost:3000"; 
-const socket = io(SOCKET_URL);
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCBhpa1S7KEjaovbIH5Kj4P58FgE3On0EA",
+  authDomain: "wiki-project-b88d2.firebaseapp.com",
+  databaseURL: "https://wiki-project-b88d2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "wiki-project-b88d2",
+  storageBucket: "wiki-project-b88d2.firebasestorage.app",
+  messagingSenderId: "415075792805",
+  appId: "1:415075792805:web:6d63fe39fd3e07fe811a4c",
+  measurementId: "G-020BY39YQE"
+};
 
-// --- 0. DEKLARASI SEMUA ELEMEN ---
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+// ID Unik Lokal untuk membedakan pesan Anda dan teman
+const myId = Math.random().toString(36).substring(7);
+
+// --- 1. DEKLARASI SEMUA ELEMEN ---
 const menuUtama = document.getElementById('menu-utama');
 const menuRahasia = document.getElementById('menu-rahasia');
 const halamanUtama = document.getElementById('halaman-utama');
@@ -17,13 +38,13 @@ const safeScreen = document.getElementById('safe-screen');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// --- 1. INISIALISASI DEFAULT ---
+// --- 2. INISIALISASI DEFAULT ---
 halamanUtama.classList.remove('hidden'); 
 halamanRahasia.classList.add('hidden'); 
 halamanRiwayat.classList.add('hidden'); 
 chatInput.setAttribute('readonly', true); 
 
-// --- 2. FITUR: FAKE LOADING ---
+// --- 3. FITUR: FAKE LOADING ---
 function jalankanLoading(callback) {
     const originalPlaceholder = chatInput.placeholder;
     chatInput.placeholder = "Memuat data...";
@@ -36,12 +57,12 @@ function jalankanLoading(callback) {
     }, 500);
 }
 
-// --- 3. FITUR: DOUBLE CLICK RESCUE (LOGO) ---
+// --- 4. FITUR: DOUBLE CLICK RESCUE (LOGO) ---
 logoWiki.addEventListener('dblclick', () => {
-    document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Escape'}));
+    pemicuBossKey();
 });
 
-// --- 4. NAVIGASI ---
+// --- 5. NAVIGASI ---
 tombolMenu.addEventListener('click', () => {
     sidebarKiri.classList.toggle('hidden');
 });
@@ -76,30 +97,37 @@ menuRahasia.addEventListener('click', () => {
     });
 });
 
-// --- 5. BOSS KEY (ESC) ---
+// --- 6. BOSS KEY (ESC) ---
 let isSafeMode = false;
 document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        isSafeMode = !isSafeMode;
-        socket.emit('status_boss_key', isSafeMode);
-
-        if (isSafeMode) {
-            safeScreen.classList.remove('hidden');
-            document.title = "404 Not Found";
-        } else {
-            safeScreen.classList.add('hidden');
-            if (!halamanRahasia.classList.contains('hidden')) {
-                document.title = "Sejarah Nusantara - Wikipedia bahasa Indonesia";
-            } else if (!halamanRiwayat.classList.contains('hidden')) {
-                document.title = "Riwayat revisi: Sejarah Nusantara - Wikipedia";
-            } else {
-                document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
-            }
-        }
-    }
+    if (event.key === 'Escape') pemicuBossKey();
 });
 
-// --- 6. CHAT & SANDI DEWA ---
+function pemicuBossKey() {
+    isSafeMode = !isSafeMode;
+    // Kirim status darurat ke database agar teman tahu (opsional)
+    chatRef.push({
+        teks: isSafeMode ? "Perlindungan halaman aktif." : "Perlindungan halaman dicabut.",
+        tipe: isSafeMode ? 'darurat_on' : 'darurat_off',
+        waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    if (isSafeMode) {
+        safeScreen.classList.remove('hidden');
+        document.title = "404 Not Found";
+    } else {
+        safeScreen.classList.add('hidden');
+        if (!halamanRahasia.classList.contains('hidden')) {
+            document.title = "Sejarah Nusantara - Wikipedia bahasa Indonesia";
+        } else if (!halamanRiwayat.classList.contains('hidden')) {
+            document.title = "Riwayat revisi: Sejarah Nusantara - Wikipedia";
+        } else {
+            document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
+        }
+    }
+}
+
+// --- 7. CHAT & SANDI DEWA (FIREBASE VERSION) ---
 const MAKSIMAL_PESAN = 7;
 
 chatInput.addEventListener('keydown', (e) => {
@@ -115,39 +143,42 @@ chatInput.addEventListener('keydown', (e) => {
         }
 
         if (pesan !== "") {
-            socket.emit('kirim_pesan', pesan);
-            tampilkanPesan(pesan, true); 
+            // SIMPAN KE FIREBASE
+            chatRef.push({
+                senderId: myId,
+                teks: pesan,
+                tipe: 'chat',
+                waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+            });
             chatInput.value = "";
         }
     }
 });
 
-// --- 7. RENDER RIWAYAT REVISI ---
-socket.on('terima_arsip', (arsip) => {
-    daftarArsipLengkap.innerHTML = ""; 
-    arsip.forEach(item => {
-        tambahKeUIArsip({
-            waktu: item.waktu,
-            teks: item.teks,
-            tipe: item.tipe,
-            isLokal: item.senderId === socket.id
-        });
+// --- 8. LOGIKA TERIMA DATA REALTIME ---
+// Dipanggil setiap ada data baru di Firebase
+chatRef.limitToLast(50).on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    const isLokal = data.senderId === myId;
+
+    if (data.tipe === 'chat') {
+        tampilkanPesan(data.teks, isLokal);
+    } else {
+        tampilkanNotifikasiSistem(data.teks, data.tipe);
+    }
+
+    // Masukkan ke riwayat revisi secara otomatis
+    tambahKeUIArsip({
+        ...data,
+        isLokal: isLokal
     });
-});
-
-socket.on('terima_pesan', (data) => {
-    tampilkanPesan(data.teks, false);
-});
-
-socket.on('sistem_pesan', (data) => {
-    tampilkanNotifikasiSistem(data.teks, data.tipe);
 });
 
 function bukaHalamanRiwayat() {
     halamanRahasia.classList.add('hidden');
     halamanRiwayat.classList.remove('hidden');
     document.title = "Riwayat revisi: Sejarah Nusantara - Wikipedia";
-    socket.emit('minta_arsip');
+    // Data sudah otomatis ter-update oleh listener 'child_added'
 }
 
 function tambahKeUIArsip(data) {
@@ -163,7 +194,6 @@ function tambahKeUIArsip(data) {
             infoPengirim = `<b class="text-[#0645ad] cursor-pointer">Me</b> <span class="text-gray-400 text-[12px]">(Bicara)</span>`;
             teksPesan = `<span class="text-gray-900 font-medium">"${data.teks}"</span>`;
         } else {
-            // Label Diganti menjadi Anonymous
             infoPengirim = `<b class="text-[#b32424] cursor-pointer">Anonymous</b> <span class="text-gray-400 text-[12px]">(Bicara)</span>`;
             teksPesan = `<span class="text-blue-900 italic">"${data.teks}"</span>`;
         }
@@ -173,19 +203,19 @@ function tambahKeUIArsip(data) {
     }
 
     li.innerHTML = `${aksi} <span class="text-gray-500 text-[12px] w-14 shrink-0 font-mono">${data.waktu}</span> <div class="flex-1 leading-tight">${infoPengirim} . . ${teksPesan}</div>`;
+    
+    // Agar tidak duplikat saat baru buka, kita bersihkan jika perlu atau handle logic-nya
     daftarArsipLengkap.appendChild(li);
 }
 
-// --- 8. RENDER CHAT REFERENSI ---
 function tampilkanPesan(pesan, isLokal) {
     const li = document.createElement('li');
-    li.className = "mb-2"; 
+    li.className = "mb-2 animate-fade-in"; 
     const simbolWiki = `<span class="text-[#36c] cursor-pointer">^</span> `;
     
     if (isLokal) {
         li.innerHTML = `${simbolWiki} <span class="text-gray-800 font-medium">"${pesan}"</span>. <i>Arsip Nasional</i>.`;
     } else {
-        // Tampilan di bawah artikel dibuat bersih tanpa IP
         li.innerHTML = `${simbolWiki} <span class="text-blue-900 italic">"${pesan}"</span>. Diakses pada 2026.`;
     }
     
@@ -194,30 +224,14 @@ function tampilkanPesan(pesan, isLokal) {
 
 function tampilkanNotifikasiSistem(pesanSistem, tipe) {
     const li = document.createElement('li');
-    let warnaHex = "#72777d"; // Default Abu-abu Wikipedia
+    let warnaHex = "#72777d"; 
     let ikon = "♦";
 
-    // Logika Warna Berdasarkan Tipe Kejadian (Gaya Admin Wikipedia)
-    if (tipe === 'join') { 
-        warnaHex = "#006400"; // Hijau Tua
-        ikon = "+"; 
-    } 
-    else if (tipe === 'leave') { 
-        warnaHex = "#b32424"; // Merah Tua
-        ikon = "−"; 
-    } 
-    else if (tipe === 'darurat_on') { 
-        // WARNA PERINGATAN RESMI (Cokelat Emas Wikipedia)
-        warnaHex = "#855e00"; 
-        ikon = "⚠"; 
-    } 
-    else if (tipe === 'darurat_off') { 
-        // WARNA INFORMASI (Biru Link)
-        warnaHex = "#36c"; 
-        ikon = "✅"; 
-    }
+    if (tipe === 'join') { warnaHex = "#006400"; ikon = "+"; } 
+    else if (tipe === 'leave') { warnaHex = "#b32424"; ikon = "−"; } 
+    else if (tipe === 'darurat_on') { warnaHex = "#855e00"; ikon = "⚠"; } 
+    else if (tipe === 'darurat_off') { warnaHex = "#36c"; ikon = "✅"; }
 
-    // Menggunakan style.color agar pasti tembus ke browser
     li.style.color = warnaHex;
     li.className = `mb-2 italic text-[12px] flex items-center gap-2 font-sans`;
     li.innerHTML = `<span style="font-weight: bold;">${ikon}</span> <span>${pesanSistem}</span>`;
