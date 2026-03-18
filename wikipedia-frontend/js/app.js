@@ -31,7 +31,7 @@ const sidebarKiri = document.getElementById('sidebar-kiri');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI (DESAIN ELEGAN) ---
+// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI (DARK MAINTENANCE) ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
 layarProteksi.className = "fixed inset-0 bg-[#0a0a0a]/95 backdrop-blur-xl z-[9999] flex flex-col items-center justify-center hidden transition-all duration-500";
@@ -45,17 +45,38 @@ layarProteksi.innerHTML = `
         </div>
         <h2 class="text-xl sm:text-2xl font-light text-white mb-4 tracking-[0.2em] uppercase">System Maintenance</h2>
         <div class="w-12 h-[1px] bg-gray-600 mx-auto mb-6"></div>
-        <p class="text-[13px] sm:text-[14px] text-gray-400 font-light max-w-md mx-auto leading-relaxed">
-            Server sedang dalam pemeliharaan rutin untuk peningkatan sistem. Seluruh akses dihentikan sementara waktu. Mohon kembali beberapa saat lagi.
-        </p>
-        <div class="mt-12 flex justify-center gap-3 opacity-60">
-            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse"></div>
-            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" style="animation-delay: 0.2s"></div>
-            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-pulse" style="animation-delay: 0.4s"></div>
-        </div>
+        <p class="text-[13px] sm:text-[14px] text-gray-400 font-light max-w-md mx-auto leading-relaxed">Server pemeliharaan rutin. Mohon kembali beberapa saat lagi.</p>
     </div>
 `;
 document.body.appendChild(layarProteksi);
+
+// --- BIKIN ELEMEN POP-UP ALERT (ELEGAN MODAL) SECARA DINAMIS ---
+const alertModal = document.createElement('div');
+alertModal.id = "global-alert-modal";
+// Fixed di atas layar, background transparan buram halus
+alertModal.className = "fixed inset-x-0 top-0 p-4 z-[10000] flex justify-center hidden transform -translate-y-full transition-all duration-500 ease-out";
+alertModal.innerHTML = `
+    <div class="bg-white border-l-4 border-[#b32424] shadow-2xl p-5 sm:p-6 rounded-[2px] max-w-lg w-full relative flex gap-4 items-start">
+        <svg class="text-[#b32424] shrink-0 mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        
+        <div class="flex-1">
+            <h3 class="text-xs uppercase tracking-widest text-gray-500 mb-1 font-sans">Peringatan Prioritas</h3>
+            <p id="global-alert-text" class="text-[16px] sm:text-[18px] text-red-950 font-medium leading-relaxed break-words"></p>
+        </div>
+        
+        <button id="close-alert-btn" class="text-gray-400 hover:text-gray-900 text-2xl font-bold font-sans line-height-1">&times;</button>
+    </div>
+`;
+document.body.appendChild(alertModal);
+
+// Fungsi Tutup Alert
+document.getElementById('close-alert-btn').addEventListener('click', () => {
+    alertModal.classList.add('-translate-y-full');
+    setTimeout(() => alertModal.classList.add('hidden'), 500);
+});
 
 // --- 2. LOGIKA PRESENSI ---
 const presenceRef = database.ref('status_kehadiran');
@@ -101,20 +122,18 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// --- 4. PANIC TAB (Judul Web Nyamar Otomatis) ---
+// --- 4. PANIC TAB ---
 document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-        document.title = "Google"; 
-    } else {
+    if (document.hidden) document.title = "Google"; 
+    else {
         stateRef.once('value').then((snapshot) => {
-            const diproteksi = snapshot.val()?.diproteksi || false;
-            if (diproteksi) document.title = "System Maintenance";
+            if (snapshot.val()?.diproteksi) document.title = "System Maintenance";
             else updateJudulHalaman();
         });
     }
 });
 
-// --- 5. GLOBAL BOSS KEY, EVAKUASI INSTAN, & AUTO-LOCK ---
+// --- 5. GLOBAL BOSS KEY & EVAKUASI & AUTO-LOCK ---
 let idleTimeout;
 function resetIdleTimer() {
     clearTimeout(idleTimeout);
@@ -122,24 +141,20 @@ function resetIdleTimer() {
         stateRef.once('value').then((snapshot) => {
             if (!snapshot.val()?.diproteksi) stateRef.set({ diproteksi: true });
         });
-    }, 180000); // 3 Menit
+    }, 180000); 
 }
 
 ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => document.addEventListener(evt, resetIdleTimer));
 resetIdleTimer(); 
 
 document.addEventListener('keydown', (e) => {
-    // Tombol Lock Layar Biasa (ESC)
     if (e.key === 'Escape') pemicuDarurat();
-    
-    // Tombol Evakuasi Instan (~ atau Alt+Z)
     if (e.key === '`' || e.key === '~' || (e.altKey && e.key.toLowerCase() === 'z')) {
         window.location.replace("https://classroom.google.com"); 
     }
 });
 logoWiki.addEventListener('dblclick', pemicuDarurat);
 
-// Sensor Ketuk 3x di HP
 let tapCount = 0;
 let tapTimer;
 document.addEventListener('touchstart', (e) => {
@@ -150,9 +165,7 @@ document.addEventListener('touchstart', (e) => {
             if (!snapshot.val()?.diproteksi) stateRef.set({ diproteksi: true });
         });
         tapCount = 0;
-    } else {
-        tapTimer = setTimeout(() => { tapCount = 0; }, 500);
-    }
+    } else { tapTimer = setTimeout(() => { tapCount = 0; }, 500); }
 });
 
 function pemicuDarurat() {
@@ -175,14 +188,14 @@ stateRef.on('value', (snapshot) => {
 });
 
 function updateJudulHalaman() {
-    if (!halamanRahasia.classList.contains('hidden')) document.title = "Sejarah Nusantara - Wikipedia bahasa Indonesia";
+    if (!halamanRahasia.classList.contains('hidden')) document.title = "Sejarah Nusantara - Wikipedia";
     else if (!halamanRiwayat.classList.contains('hidden')) document.title = "Riwayat revisi: Sejarah Nusantara - Wikipedia";
     else document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
 }
 
 // --- 6. NAVIGASI HALAMAN ---
 function jalankanLoading(callback) {
-    chatInput.placeholder = "Memuat data...";
+    chatInput.placeholder = "Memuat...";
     chatInput.classList.add('opacity-50');
     setTimeout(() => {
         chatInput.classList.remove('opacity-50');
@@ -199,9 +212,7 @@ function gantiHalaman(tujuan) {
     if (tujuan === halamanRahasia) {
         chatInput.placeholder = "Ketik rahasia...";
         chatInput.focus();
-    } else {
-        chatInput.placeholder = "Telusuri Wikipedia";
-    }
+    } else { chatInput.placeholder = "Telusuri Wikipedia"; }
     updateJudulHalaman();
     if (window.innerWidth < 768) sidebarKiri.classList.add('hidden');
 }
@@ -210,7 +221,7 @@ menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(hal
 menuRahasia.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanRahasia)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 7. LOGIKA KIRIM & PESAN TERBAKAR (BOM) ---
+// --- 7. LOGIKA KIRIM & DUMMY SEARCH & BOM & ALERT ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
@@ -230,7 +241,7 @@ chatInput.addEventListener('keydown', (e) => {
         if (pesan === "*#hapus#*") {
             chatRef.remove().then(() => {
                 chatRef.push({
-                    teks: "Seluruh riwayat obrolan telah dibersihkan oleh sistem.",
+                    teks: "Seluruh riwayat obrolan dibersihkan.",
                     tipe: 'darurat_on', waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
                     senderId: "system", timestamp: Date.now()
                 });
@@ -238,7 +249,19 @@ chatInput.addEventListener('keydown', (e) => {
             chatInput.value = ""; return;
         }
 
-        // Cek Fitur Pesan Bom (Self-Destruct)
+        // --- CEK FITUR ALERT GLOBAL ---
+        if (pesan.startsWith("/alert ")) {
+            let teksAlert = pesan.replace("/alert ", "");
+            chatRef.push({
+                senderId: myId,
+                teks: teksAlert,
+                waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                tipe: 'alert', // Tipe pesan baru
+                timestamp: Date.now()
+            });
+            chatInput.value = ""; return;
+        }
+
         let tipePesan = 'chat';
         let teksFinal = pesan;
         if (pesan.startsWith("/bom ")) {
@@ -265,7 +288,7 @@ chatRef.on('value', (snapshot) => {
     }
 });
 
-// --- 8. INDIKATOR MENGETIK (STEALTH TYPING) ---
+// --- 8. INDIKATOR MENGETIK ---
 let typingTimer;
 chatInput.addEventListener('input', () => {
     if (!halamanRahasia.classList.contains('hidden')) {
@@ -279,16 +302,13 @@ typingRef.on('value', (snapshot) => {
     const data = snapshot.val();
     let someoneIsTyping = false;
     if (data) { Object.keys(data).forEach(id => { if (id !== myId) someoneIsTyping = true; }); }
-    
     if (someoneIsTyping) {
         logoWiki.style.filter = "drop-shadow(0px 0px 4px #36c)";
         logoWiki.style.transition = "filter 0.3s ease";
-    } else {
-        logoWiki.style.filter = "none";
-    }
+    } else { logoWiki.style.filter = "none"; }
 });
 
-// --- 9. SUARA AUDIO RAHASIA (STEALTH AUDIO CUE) ---
+// --- 9. SUARA AUDIO RAHASIA ---
 function mainkanSuaraKlik() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -297,50 +317,43 @@ function mainkanSuaraKlik() {
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); 
         oscillator.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.05); 
-        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); // Volume sangat pelan
+        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.05);
-    } catch(e) {} // Abaikan jika browser tidak support
+        oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.05);
+    } catch(e) {}
 }
 
-// --- 10. LISTENER REALTIME (RENDER CHAT & BOM) ---
+// --- 10. LISTENER REALTIME (RENDER CHAT & BOM & ALERT) ---
 chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     
-    // --- HITUNG MUNDUR WAKTU BOM (Akurat dengan Server) ---
-    let waktuSisa = 10; 
-    if (data.tipe === 'bom') {
-        // Kalkulasi sisa waktu berdasarkan kapan pesan dikirim
-        waktuSisa = Math.ceil((data.timestamp + 10000 - Date.now()) / 1000);
-        
-        // Jika saat kita muat ulang halaman ternyata pesannya sudah lebih dari 10 detik,
-        // langsung musnahkan dan abaikan (jangan ditampilkan).
-        if (waktuSisa <= 0) {
-            if (isMe) chatRef.child(snapshot.key).remove();
-            return; 
-        }
-    }
+    // Suara jika tab tidak dilihat
+    if (pesanBaru && !isMe && document.hidden) { mainkanSuaraKlik(); }
 
-    // Mainkan suara HANYA jika pesan baru dari orang lain dan tab sedang tidak dilihat
-    if (pesanBaru && !isMe && document.hidden) {
-        mainkanSuaraKlik();
+    // --- LOGIKA MENAMPILKAN GLOBAL ALERT ---
+    if (data.tipe === 'alert') {
+        // Tampilkan di Arsip Lengkap (Halaman Rahasia)
+        tampilkanLogAlertDiArsip(data.teks, data.waktu, isMe, snapshot.key);
+
+        // Munculkan Pop-up Modal (Besar) jika ini pesan baru dan bukan dari kita sendiri
+        if (pesanBaru && !isMe) {
+            pemicuGlobalAlertPopup(data.teks);
+        }
+        return; // Jangan render ke Daftar Referensi Utama
     }
 
     if (data.tipe === 'chat' || data.tipe === 'bom') {
         const liArsip = document.createElement('li');
         liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
-        
         let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
         
-        // Render Teks (Sisipkan span dengan ID khusus agar angkanya bisa diupdate tiap detik)
         let teksArsip;
         if (data.tipe === 'bom') {
-            teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 MENGHANCURKAN DALAM <span id="arsip-timer-${snapshot.key}">${waktuSisa}</span>s: ${data.teks}</span>`;
+            teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 HANCUR DALAM <span id="arsip-timer-${snapshot.key}">10</span>s: "${data.teks}"</span>`;
         } else {
             teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${data.teks}</span>` : `<span class="text-gray-700 italic break-words">${data.teks}</span>`;
         }
@@ -348,13 +361,11 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         liArsip.innerHTML = `<div class="flex items-center gap-2 min-w-[130px] text-gray-500 font-mono text-xs shrink-0"><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span> <span>${data.waktu}</span></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
-        let liRef; // Untuk layar Wikipedia Utama
         if (pesanBaru) {
-            liRef = document.createElement('li');
+            const liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
             if (data.tipe === 'bom') {
-                // Di layar Wikipedia, kita samarkan sedikir tapi teks asli dan angka mundurnya tetap kelihatan
-                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ <sup>c</sup> "${data.teks}" [Hancur dalam: <span id="ref-timer-${snapshot.key}">${waktuSisa}</span>s]</span>`;
+                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${data.teks}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`;
             } else if (isMe) {
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${data.teks}"</span>. <i>Arsip Pribadi</i>, 2026.`;
             } else {
@@ -364,31 +375,21 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
         }
 
-        // LOGIKA PENGHANCURAN & HITUNG MUNDUR (COUNTDOWN ANIMATION)
+        // LOGIKA PENGHANCURAN BOM (COUNTDOWN)
         if (data.tipe === 'bom') {
-            const timerInterval = setInterval(() => {
-                waktuSisa--;
-                
-                // Cari elemen angkanya dan ubah teksnya setiap 1 detik
-                const spanArsip = document.getElementById(`arsip-timer-${snapshot.key}`);
-                if (spanArsip) spanArsip.innerText = waktuSisa;
-                
-                const spanRef = document.getElementById(`ref-timer-${snapshot.key}`);
-                if (spanRef) spanRef.innerText = waktuSisa;
-
-                // Jika waktu habis (0), hancurkan elemen dan hentikan interval
-                if (waktuSisa <= 0) {
-                    clearInterval(timerInterval);
-                    liArsip.style.transition = "opacity 0.5s ease";
-                    liArsip.style.opacity = "0"; // Efek memudar sebelum hilang
-                    
-                    setTimeout(() => {
-                        liArsip.remove();
-                        if (liRef) liRef.remove();
-                        if (isMe) chatRef.child(snapshot.key).remove();
-                    }, 500); // Tunggu animasi memudar selesai baru dihapus dari HTML
+            let sisaBom = 10;
+            const bomInterval = setInterval(() => {
+                sisaBom--;
+                const aTimer = document.getElementById(`arsip-timer-${snapshot.key}`); if(aTimer) aTimer.innerText = sisaBom;
+                const rTimer = document.getElementById(`ref-timer-${snapshot.key}`); if(rTimer) rTimer.innerText = sisaBom;
+                if (sisaBom <= 0) {
+                    clearInterval(bomInterval);
+                    liArsip.remove();
+                    const refList = document.querySelectorAll('#daftar-referensi li');
+                    refList.forEach(li => { if(li.innerText.includes(`"${data.teks}"`)) li.remove(); });
+                    if (isMe) chatRef.child(snapshot.key).remove();
                 }
-            }, 1000); // 1000 milidetik = 1 detik
+            }, 1000);
         }
 
     } else {
@@ -399,6 +400,25 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 });
+
+// --- Fungsi Pendukung Fitur Alert ---
+function pemicuGlobalAlertPopup(pesan) {
+    document.getElementById('global-alert-text').innerText = pesan;
+    alertModal.classList.remove('hidden');
+    // Beri sedikit delay agar browser sempat merender 'hidden' sebelum menjalankan transformasi
+    setTimeout(() => alertModal.classList.remove('-translate-y-full'), 10);
+}
+
+function tampilkanLogAlertDiArsip(teks, waktu, isMe, key) {
+    const liArsip = document.createElement('li');
+    liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b-2 border-red-100 py-3 text-[13px] bg-red-50 hover:bg-red-100";
+    let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0">ME (ALERT)</span>` : `<span class="bg-red-200 text-red-900 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0">ANON (ALERT)</span>`;
+    let teksArsip = `<span class="text-red-950 font-bold break-words">"${teks}"</span>`;
+
+    liArsip.innerHTML = `<div class="flex items-center gap-2 min-w-[130px] text-gray-500 font-mono text-xs shrink-0"><span class="text-[#0645ad] cursor-pointer">(skr | prb)</span> <span>${waktu}</span></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
+    daftarArsipLengkap.appendChild(liArsip);
+}
+
 
 // --- 11. FUNGSI LOG SISTEM ---
 function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) {
