@@ -40,6 +40,34 @@ database.ref('.info/connected').on('value', (snapshot) => {
     });
 });
 
+function tampilkanNotifikasiSistem(pesanSistem, tipe) {
+    const li = document.createElement('li');
+    let warnaHex = "#72777d"; 
+    let ikon = "♦";
+
+    if (tipe === 'join') { 
+        warnaHex = "#006400"; // Hijau
+        ikon = "+"; 
+    } 
+    else if (tipe === 'darurat_on') { 
+        warnaHex = "#855e00"; // Cokelat Emas (Proteksi)
+        ikon = "⚠"; 
+    } 
+    else if (tipe === 'darurat_off') { 
+        warnaHex = "#36c"; // Biru
+        ikon = "✅"; 
+    }
+
+    li.style.color = warnaHex;
+    li.className = `mb-2 italic text-[12px] flex items-center gap-2 font-sans`;
+    li.innerHTML = `<span style="font-weight: bold;">${ikon}</span> <span>${pesanSistem}</span>`;
+    
+    daftarReferensi.appendChild(li);
+    // Masukkan juga ke halaman riwayat agar tercatat
+    const liArsip = li.cloneNode(true);
+    daftarArsipLengkap.appendChild(liArsip);
+}
+
 // Catatan: Karena Firebase tidak punya event "onDisconnect" yang mengirim pesan chat,
 // notifikasi "User Keluar" biasanya sulit dibuat secara instan tanpa backend.
 // Namun, notifikasi "Join" dan "Boss Key" tetap akan muncul di Log.
