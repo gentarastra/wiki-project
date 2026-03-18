@@ -339,7 +339,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
             if (data.tipe === 'bom') {
-                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [PERINGATAN] Data terenkripsi...</span>`;
+                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ <sup>c</sup> "${data.teks}" (Hancur dalam 10s)</span>`;
             } else if (isMe) {
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${data.teks}"</span>. <i>Arsip Pribadi</i>, 2026.`;
             } else {
