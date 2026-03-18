@@ -106,7 +106,7 @@ function formatWaktuWiki(timestamp) {
 }
 
 // --- 4. GHOST ENTRY & PRESENSI ---
-let keyBuffer = ""; const secretCode = "sandi"; 
+let keyBuffer = ""; const secretCode = "01012025"; 
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { 
         keyBuffer += e.key.toLowerCase();
