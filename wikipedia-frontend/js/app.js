@@ -144,7 +144,7 @@ function gantiHalaman(tujuan) {
 
     if (tujuan === halamanRahasia) {
         chatInput.removeAttribute('readonly');
-        chatInput.placeholder = "Ketik rahasia...";
+        chatInput.placeholder = "Telusuri Wikipedia";
         chatInput.focus();
     } else {
         chatInput.setAttribute('readonly', true);
