@@ -14,7 +14,7 @@ firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const chatRef = database.ref('wiki_history'); 
 const stateRef = database.ref('status_global'); 
-const typingRef = database.ref('status_mengetik'); // Database untuk deteksi ngetik
+const typingRef = database.ref('status_mengetik');
 const myId = Math.random().toString(36).substring(7);
 const waktuMulaiSesi = Date.now();
 
@@ -31,7 +31,7 @@ const sidebarKiri = document.getElementById('sidebar-kiri');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI SECARA DINAMIS (DESAIN ELEGAN) ---
+// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI (DESAIN ELEGAN) ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
 layarProteksi.className = "fixed inset-0 bg-[#0a0a0a]/95 backdrop-blur-xl z-[9999] flex flex-col items-center justify-center hidden transition-all duration-500";
@@ -57,7 +57,7 @@ layarProteksi.innerHTML = `
 `;
 document.body.appendChild(layarProteksi);
 
-// --- 2. LOGIKA PRESENSI (RADAR ANTI DUPLIKAT) ---
+// --- 2. LOGIKA PRESENSI ---
 const presenceRef = database.ref('status_kehadiran');
 const userStatusRef = presenceRef.push();
 let daftarUserOnline = {}; 
@@ -67,7 +67,6 @@ database.ref('.info/connected').on('value', (snapshot) => {
     userStatusRef.onDisconnect().remove().then(() => {
         userStatusRef.set({ status: 'online', userId: myId });
     });
-    // Hapus status ngetik kita kalau tiba-tiba terputus
     typingRef.child(myId).onDisconnect().remove(); 
 });
 
@@ -102,44 +101,59 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// --- 4. PANIC TAB (Ubah Judul Tab Otomatis Saat Ditinggal) ---
+// --- 4. PANIC TAB (Judul Web Nyamar Otomatis) ---
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-        document.title = "Google"; // Berubah pura-pura jadi Google
+        document.title = "Google"; 
     } else {
-        // Kembalikan ke judul asli saat dibuka lagi
         stateRef.once('value').then((snapshot) => {
             const diproteksi = snapshot.val()?.diproteksi || false;
-            if (diproteksi) {
-                document.title = "System Maintenance";
-            } else {
-                updateJudulHalaman();
-            }
+            if (diproteksi) document.title = "System Maintenance";
+            else updateJudulHalaman();
         });
     }
 });
 
-// --- 5. GLOBAL BOSS KEY & AUTO-LOCK (KUNCI OTOMATIS) ---
+// --- 5. GLOBAL BOSS KEY, EVAKUASI INSTAN, & AUTO-LOCK ---
 let idleTimeout;
-
 function resetIdleTimer() {
     clearTimeout(idleTimeout);
-    // Jika tidak ada aktivitas selama 3 menit (180.000 ms), kunci layar
     idleTimeout = setTimeout(() => {
         stateRef.once('value').then((snapshot) => {
             if (!snapshot.val()?.diproteksi) stateRef.set({ diproteksi: true });
         });
-    }, 180000); 
+    }, 180000); // 3 Menit
 }
 
-// Deteksi aktivitas untuk mencegah auto-lock
-['mousemove', 'keydown', 'click', 'scroll'].forEach(evt => document.addEventListener(evt, resetIdleTimer));
-resetIdleTimer(); // Mulai timer saat web dibuka
+['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => document.addEventListener(evt, resetIdleTimer));
+resetIdleTimer(); 
 
 document.addEventListener('keydown', (e) => {
+    // Tombol Lock Layar Biasa (ESC)
     if (e.key === 'Escape') pemicuDarurat();
+    
+    // Tombol Evakuasi Instan (~ atau Alt+Z)
+    if (e.key === '`' || e.key === '~' || (e.altKey && e.key.toLowerCase() === 'z')) {
+        window.location.replace("https://classroom.google.com"); 
+    }
 });
 logoWiki.addEventListener('dblclick', pemicuDarurat);
+
+// Sensor Ketuk 3x di HP
+let tapCount = 0;
+let tapTimer;
+document.addEventListener('touchstart', (e) => {
+    tapCount++;
+    clearTimeout(tapTimer);
+    if (tapCount >= 3) {
+        stateRef.once('value').then((snapshot) => {
+            if (!snapshot.val()?.diproteksi) stateRef.set({ diproteksi: true });
+        });
+        tapCount = 0;
+    } else {
+        tapTimer = setTimeout(() => { tapCount = 0; }, 500);
+    }
+});
 
 function pemicuDarurat() {
     stateRef.once('value').then((snapshot) => {
@@ -161,13 +175,9 @@ stateRef.on('value', (snapshot) => {
 });
 
 function updateJudulHalaman() {
-    if (!halamanRahasia.classList.contains('hidden')) {
-        document.title = "Sejarah Nusantara - Wikipedia bahasa Indonesia";
-    } else if (!halamanRiwayat.classList.contains('hidden')) {
-        document.title = "Riwayat revisi: Sejarah Nusantara - Wikipedia";
-    } else {
-        document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
-    }
+    if (!halamanRahasia.classList.contains('hidden')) document.title = "Sejarah Nusantara - Wikipedia bahasa Indonesia";
+    else if (!halamanRiwayat.classList.contains('hidden')) document.title = "Riwayat revisi: Sejarah Nusantara - Wikipedia";
+    else document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
 }
 
 // --- 6. NAVIGASI HALAMAN ---
@@ -187,11 +197,9 @@ function gantiHalaman(tujuan) {
     tujuan.classList.remove('hidden');
 
     if (tujuan === halamanRahasia) {
-        // Mode Chat Rahasia
         chatInput.placeholder = "Ketik rahasia...";
         chatInput.focus();
     } else {
-        // Mode Penyamaran (Bisa diketik untuk Dummy Search)
         chatInput.placeholder = "Telusuri Wikipedia";
     }
     updateJudulHalaman();
@@ -202,54 +210,54 @@ menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(hal
 menuRahasia.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanRahasia)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 7. LOGIKA KIRIM & Pengecoh Kolom Pencarian (DUMMY SEARCH) ---
+// --- 7. LOGIKA KIRIM & PESAN TERBAKAR (BOM) ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
         if (pesan === "") return;
 
-        // JIKA DI HALAMAN UTAMA (PENYAMARAN) -> LAKUKAN PENCARIAN WIKIPEDIA ASLI
+        // Dummy Search Wikipedia Asli
         if (halamanRahasia.classList.contains('hidden')) {
             window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`;
             return;
         }
 
-        // JIKA DI HALAMAN RAHASIA -> FITUR CHAT
         if (pesan === "*#arsip#*") {
             gantiHalaman(halamanRiwayat);
-            chatInput.value = "";
-            return;
+            chatInput.value = ""; return;
         }
 
         if (pesan === "*#hapus#*") {
             chatRef.remove().then(() => {
                 chatRef.push({
                     teks: "Seluruh riwayat obrolan telah dibersihkan oleh sistem.",
-                    tipe: 'darurat_on',
-                    waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-                    senderId: "system",
-                    timestamp: Date.now()
+                    tipe: 'darurat_on', waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                    senderId: "system", timestamp: Date.now()
                 });
             });
-            chatInput.value = "";
-            return;
+            chatInput.value = ""; return;
+        }
+
+        // Cek Fitur Pesan Bom (Self-Destruct)
+        let tipePesan = 'chat';
+        let teksFinal = pesan;
+        if (pesan.startsWith("/bom ")) {
+            tipePesan = 'bom';
+            teksFinal = pesan.replace("/bom ", "");
         }
 
         chatRef.push({
             senderId: myId,
-            teks: pesan,
+            teks: teksFinal,
             waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            tipe: 'chat',
+            tipe: tipePesan,
             timestamp: Date.now()
         });
         chatInput.value = "";
-        
-        // Matikan status mengetik sesaat setelah mengirim
         typingRef.child(myId).remove();
     }
 });
 
-// Listener Jika Database Dihapus (Clear Layar)
 chatRef.on('value', (snapshot) => {
     if (!snapshot.exists()) {
         daftarArsipLengkap.innerHTML = "";
@@ -260,27 +268,18 @@ chatRef.on('value', (snapshot) => {
 // --- 8. INDIKATOR MENGETIK (STEALTH TYPING) ---
 let typingTimer;
 chatInput.addEventListener('input', () => {
-    // Kalau kita ada di halaman rahasia, kasih tau server kita lagi ngetik
     if (!halamanRahasia.classList.contains('hidden')) {
         typingRef.child(myId).set(true);
         clearTimeout(typingTimer);
-        // Anggap berhenti ngetik kalau 2 detik tidak ada ketikan baru
         typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000);
     }
 });
 
-// Dengarkan jika pacar sedang mengetik
 typingRef.on('value', (snapshot) => {
     const data = snapshot.val();
     let someoneIsTyping = false;
+    if (data) { Object.keys(data).forEach(id => { if (id !== myId) someoneIsTyping = true; }); }
     
-    if (data) {
-        Object.keys(data).forEach(id => {
-            if (id !== myId) someoneIsTyping = true; // Ada orang lain yg true
-        });
-    }
-    
-    // Jika dia ngetik, Logo Wikipedia akan bercahaya biru halus
     if (someoneIsTyping) {
         logoWiki.style.filter = "drop-shadow(0px 0px 4px #36c)";
         logoWiki.style.transition = "filter 0.3s ease";
@@ -289,27 +288,59 @@ typingRef.on('value', (snapshot) => {
     }
 });
 
+// --- 9. SUARA AUDIO RAHASIA (STEALTH AUDIO CUE) ---
+function mainkanSuaraKlik() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); 
+        oscillator.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.05); 
+        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); // Volume sangat pelan
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.05);
+    } catch(e) {} // Abaikan jika browser tidak support
+}
 
-// --- 9. LISTENER REALTIME (RENDER CHAT) ---
+// --- 10. LISTENER REALTIME (RENDER CHAT & BOM) ---
 chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     
-    if (data.tipe === 'chat') {
+    // Mainkan suara HANYA jika pesan baru dari orang lain dan tab sedang tidak dilihat
+    if (pesanBaru && !isMe && document.hidden) {
+        mainkanSuaraKlik();
+    }
+
+    if (data.tipe === 'chat' || data.tipe === 'bom') {
         const liArsip = document.createElement('li');
         liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
         
         let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
-        let teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${data.teks}</span>` : `<span class="text-gray-700 italic break-words">${data.teks}</span>`;
+        
+        // Render Teks (Jika Bom, berikan efek merah berkedip)
+        let teksArsip;
+        if (data.tipe === 'bom') {
+            teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 MENGHANCURKAN DALAM 10 DETIK: ${data.teks}</span>`;
+        } else {
+            teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${data.teks}</span>` : `<span class="text-gray-700 italic break-words">${data.teks}</span>`;
+        }
 
         liArsip.innerHTML = `<div class="flex items-center gap-2 min-w-[130px] text-gray-500 font-mono text-xs shrink-0"><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span> <span>${data.waktu}</span></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
+        let liRef; // Untuk layar Wikipedia
         if (pesanBaru) {
-            const liRef = document.createElement('li');
+            liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
-            if (isMe) {
+            if (data.tipe === 'bom') {
+                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [PERINGATAN] Data terenkripsi...</span>`;
+            } else if (isMe) {
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${data.teks}"</span>. <i>Arsip Pribadi</i>, 2026.`;
             } else {
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${data.teks}"</span>. <i>Sumber Luar</i>, 2026.`;
@@ -317,6 +348,17 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             daftarReferensi.appendChild(liRef);
             if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
         }
+
+        // LOGIKA PENGHANCURAN PESAN BOM
+        if (data.tipe === 'bom') {
+            setTimeout(() => {
+                liArsip.remove();
+                if (liRef) liRef.remove();
+                // Pengirim bertanggung jawab menghapus log dari server database
+                if (isMe) chatRef.child(snapshot.key).remove();
+            }, 10000); // Tepat 10 detik
+        }
+
     } else {
         if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru, data.waktu);
     }
@@ -326,7 +368,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     }
 });
 
-// --- 10. FUNGSI LOG SISTEM ---
+// --- 11. FUNGSI LOG SISTEM ---
 function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) {
     const li = document.createElement('li');
     let warnaHex = "#72777d"; let ikon = "♦";
