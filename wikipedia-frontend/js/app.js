@@ -10,13 +10,11 @@ const firebaseConfig = {
     measurementId: "G-020BY39YQE"
 };
 
-// Inisialisasi Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const chatRef = database.ref('wiki_history'); 
+const stateRef = database.ref('status_global'); // Database khusus untuk Lock Layar
 const myId = Math.random().toString(36).substring(7);
-
-// PENANDA WAKTU SESI
 const waktuMulaiSesi = Date.now();
 
 // --- 1. DEKLARASI ELEMEN ---
@@ -29,47 +27,52 @@ const daftarArsipLengkap = document.getElementById('daftar-arsip-lengkap');
 const chatInput = document.getElementById('rahasia-input');
 const tombolMenu = document.getElementById('tombol-menu');
 const sidebarKiri = document.getElementById('sidebar-kiri');
-const safeScreen = document.getElementById('safe-screen');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// --- 2. LOGIKA PRESENSI (RADAR PACAR ANTI DUPLIKAT) ---
+// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI SECARA DINAMIS ---
+const layarProteksi = document.createElement('div');
+layarProteksi.id = "layar-proteksi";
+layarProteksi.className = "fixed inset-0 bg-white/60 backdrop-blur-md z-[9999] flex flex-col items-center justify-center hidden transition-all duration-300";
+layarProteksi.innerHTML = `
+    <div class="bg-white border border-[#a2a9b1] shadow-2xl p-6 sm:p-8 max-w-[90%] sm:max-w-md text-center rounded-[2px]">
+        <svg class="mx-auto mb-4 text-[#d33]" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <h2 class="text-xl sm:text-2xl font-serif text-[#202122] mb-3 border-b border-gray-300 pb-2">Halaman Semi-Perlindungan</h2>
+        <p class="text-[13px] sm:text-[14px] text-gray-700 leading-relaxed">Halaman ini sedang diproteksi dari penyuntingan untuk mencegah vandalisme. Mohon tunggu sebentar hingga status perlindungan dicabut oleh pengurus.</p>
+    </div>
+`;
+document.body.appendChild(layarProteksi);
+
+// --- 2. LOGIKA PRESENSI (RADAR ANTI DUPLIKAT) ---
 const presenceRef = database.ref('status_kehadiran');
 const userStatusRef = presenceRef.push();
-let daftarUserOnline = {}; // Filter untuk mencegah notifikasi ganda
+let daftarUserOnline = {}; 
 
 database.ref('.info/connected').on('value', (snapshot) => {
     if (snapshot.val() === false) return;
-
     userStatusRef.onDisconnect().remove().then(() => {
-        userStatusRef.set({ 
-            status: 'online',
-            userId: myId 
-        });
+        userStatusRef.set({ status: 'online', userId: myId });
     });
 });
 
-// Deteksi Masuk (Join)
 presenceRef.on('child_added', (snapshot) => {
     const data = snapshot.val();
-    
-    // Cek jika yang masuk bukan kita, DAN belum tercatat di sistem filter
     if (data && data.userId !== myId) {
         if (!daftarUserOnline[data.userId]) {
-            daftarUserOnline[data.userId] = true; // Tandai sudah masuk
+            daftarUserOnline[data.userId] = true; 
             tampilkanNotifikasiSistem("Seorang kontributor telah bergabung dalam sesi.", "join", true);
         }
     }
 });
 
-// Deteksi Keluar (Leave)
 presenceRef.on('child_removed', (snapshot) => {
     const data = snapshot.val();
-    
-    // Cek jika yang keluar bukan kita, DAN dia memang sebelumnya ada
     if (data && data.userId !== myId) {
         if (daftarUserOnline[data.userId]) {
-            delete daftarUserOnline[data.userId]; // Hapus dari catatan
+            delete daftarUserOnline[data.userId]; 
             tampilkanNotifikasiSistem("Seorang kontributor telah meninggalkan sesi.", "leave", true);
         }
     }
@@ -80,44 +83,38 @@ tombolMenu.addEventListener('click', (e) => {
     e.stopPropagation();
     sidebarKiri.classList.toggle('hidden');
 });
-
 document.addEventListener('click', (e) => {
     if (!sidebarKiri.contains(e.target) && e.target !== tombolMenu) {
         if (window.innerWidth < 768) sidebarKiri.classList.add('hidden');
     }
 });
 
-// --- 4. BOSS KEY (ESC / DOUBLE CLICK LOGO) ---
-let isSafeMode = false;
+// --- 4. GLOBAL BOSS KEY (LAYAR KUNCI UNTUK SEMUA) ---
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') pemicuDarurat();
 });
 logoWiki.addEventListener('dblclick', pemicuDarurat);
 
 function pemicuDarurat() {
-    isSafeMode = !isSafeMode;
-    if (isSafeMode) {
-        safeScreen.classList.remove('hidden');
-        document.title = "404 Not Found";
-        chatRef.push({
-            teks: "Perlindungan halaman aktif (Halaman diproteksi).",
-            tipe: 'darurat_on',
-            waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            senderId: "system",
-            timestamp: Date.now()
-        });
-    } else {
-        safeScreen.classList.add('hidden');
-        updateJudulHalaman();
-        chatRef.push({
-            teks: "Perlindungan halaman dicabut.",
-            tipe: 'darurat_off',
-            waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            senderId: "system",
-            timestamp: Date.now()
-        });
-    }
+    // Balikkan status proteksi di server
+    stateRef.once('value').then((snapshot) => {
+        const currentStatus = snapshot.val()?.diproteksi || false;
+        stateRef.set({ diproteksi: !currentStatus });
+    });
 }
+
+// Mendengar perubahan status proteksi dari Firebase
+stateRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.diproteksi) {
+        layarProteksi.classList.remove('hidden');
+        document.title = "Dilindungi - Wikipedia bahasa Indonesia";
+        chatInput.blur(); // Lepaskan fokus keyboard
+    } else {
+        layarProteksi.classList.add('hidden');
+        updateJudulHalaman();
+    }
+});
 
 function updateJudulHalaman() {
     if (!halamanRahasia.classList.contains('hidden')) {
@@ -161,15 +158,34 @@ menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(hal
 menuRahasia.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanRahasia)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 6. LOGIKA KIRIM CHAT ---
+// --- 6. LOGIKA KIRIM & FITUR HAPUS RIWAYAT ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !halamanRahasia.classList.contains('hidden')) {
         const pesan = chatInput.value.trim();
+        
+        // Perintah Buka Arsip
         if (pesan === "*#arsip#*") {
             gantiHalaman(halamanRiwayat);
             chatInput.value = "";
             return;
         }
+
+        // Perintah Sapu Bersih (Hapus Database)
+        if (pesan === "*#hapus#*") {
+            chatRef.remove().then(() => {
+                chatRef.push({
+                    teks: "Seluruh riwayat obrolan telah dibersihkan oleh sistem.",
+                    tipe: 'darurat_on', // Warna peringatan (Cokelat Emas)
+                    waktu: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                    senderId: "system",
+                    timestamp: Date.now()
+                });
+            });
+            chatInput.value = "";
+            return;
+        }
+
+        // Kirim Pesan Biasa
         if (pesan !== "") {
             chatRef.push({
                 senderId: myId,
@@ -183,24 +199,28 @@ chatInput.addEventListener('keydown', (e) => {
     }
 });
 
-// --- 7. LISTENER REALTIME (RENDER DATA) ---
+// Listener Jika Database Dihapus Kosong (Clear Layar)
+chatRef.on('value', (snapshot) => {
+    if (!snapshot.exists()) {
+        daftarArsipLengkap.innerHTML = "";
+        daftarReferensi.innerHTML = "";
+    }
+});
+
+// --- 7. LISTENER REALTIME (RENDER CHAT) ---
 chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     
     if (data.tipe === 'chat') {
-        // --- DESAIN BARU HALAMAN ARSIP (Selalu Tampil) ---
         const liArsip = document.createElement('li');
-        // Layout rapi dengan Flexbox, hover effect, dan garis pemisah yang lembut
         liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
         
-        // Badge pengirim agar sangat mudah dibedakan
         let badge = isMe 
             ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` 
             : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
         
-        // Teks chat
         let teksArsip = isMe 
             ? `<span class="text-gray-900 font-medium break-words">${data.teks}</span>` 
             : `<span class="text-gray-700 italic break-words">${data.teks}</span>`;
@@ -210,13 +230,9 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
                 <span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span> 
                 <span>${data.waktu}</span>
             </div>
-            <div class="flex-1 flex items-start gap-2">
-                ${badge}
-                ${teksArsip}
-            </div>`;
+            <div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
-        // --- LAYAR RAHASIA (Hanya Pesan Baru) ---
         if (pesanBaru) {
             const liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
@@ -230,59 +246,39 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         }
 
     } else {
-        // JIKA BUKAN CHAT (Sistem Log)
-        if (pesanBaru || !pesanBaru) { // Kita tetap render log sistem di Arsip
+        if (pesanBaru || data.tipe === 'darurat_on') { 
             tampilkanNotifikasiSistem(data.teks, data.tipe, pesanBaru, data.waktu);
         }
     }
 
-    // Auto-scroll hanya jika kita mendapat pesan baru
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 });
 
 // --- 8. FUNGSI LOG SISTEM ---
-// Menambahkan parameter 'waktu' agar log sistem di arsip punya jam yang akurat
 function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) {
     const li = document.createElement('li');
     let warnaHex = "#72777d"; 
     let ikon = "♦";
 
-    if (tipe === 'join') { 
-        warnaHex = "#006400"; // Hijau Tua
-        ikon = "+"; 
-    } else if (tipe === 'leave') { 
-        warnaHex = "#b32424"; // Merah
-        ikon = "-"; 
-    } else if (tipe === 'darurat_on') { 
-        warnaHex = "#855e00"; // Cokelat
-        ikon = "⚠"; 
-    } else if (tipe === 'darurat_off') { 
-        warnaHex = "#36c"; // Biru
-        ikon = "✅"; 
-    }
+    if (tipe === 'join') { warnaHex = "#006400"; ikon = "+"; } 
+    else if (tipe === 'leave') { warnaHex = "#b32424"; ikon = "-"; } 
+    else if (tipe === 'darurat_on') { warnaHex = "#855e00"; ikon = "⚠"; } 
 
-    // --- DESAIN BARU UNTUK ARSIP LOG SISTEM ---
     const liArsip = document.createElement('li');
-    // Memakai background abu-abu sangat muda (bg-gray-50) agar terpisah dari obrolan
     liArsip.className = "flex flex-col sm:flex-row sm:items-baseline gap-3 border-b border-gray-200 py-2 text-[12px] bg-gray-50";
-    
-    // Gunakan waktu saat ini jika waktuTercatat kosong (untuk realtime)
     let jamTayang = waktuTercatat || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
     liArsip.innerHTML = `
         <div class="flex items-center gap-2 min-w-[130px] text-gray-400 font-mono text-xs shrink-0">
-            <span>(log sistem)</span>
-            <span>${jamTayang}</span>
+            <span>(log sistem)</span> <span>${jamTayang}</span>
         </div>
         <div class="flex-1 flex items-center gap-2 animate-fade-in" style="color: ${warnaHex};">
-            <span class="font-bold text-sm">${ikon}</span>
-            <span class="italic">${pesanSistem}</span>
+            <span class="font-bold text-sm">${ikon}</span> <span class="italic">${pesanSistem}</span>
         </div>`;
     daftarArsipLengkap.appendChild(liArsip);
 
-    // --- TAMPILKAN DI LAYAR RAHASIA (Hanya Jika Baru) ---
     if (pesanBaru) {
         li.style.color = warnaHex;
         li.className = "mb-2 italic text-[12px] flex items-center gap-2 font-sans animate-fade-in";
