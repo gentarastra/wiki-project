@@ -78,17 +78,16 @@ document.getElementById('close-alert-btn').addEventListener('click', () => {
 
 // --- 2. GHOST ENTRY (KEYLOGGER RAHASIA) ---
 let keyBuffer = "";
-const secretCode = "01012025"; // <--- INI KATA SANDI UNTUK MASUK
+const secretCode = "sandi"; // <--- INI KATA SANDI UNTUK MASUK
 document.addEventListener('keydown', (e) => {
-    if (e.key.length === 1) { // Hanya rekam ketikan huruf/angka
+    if (e.key.length === 1) { 
         keyBuffer += e.key.toLowerCase();
         if (keyBuffer.length > secretCode.length) {
             keyBuffer = keyBuffer.slice(-secretCode.length);
         }
-        // Jika ketikan cocok dengan sandi dan halaman masih tersembunyi
         if (keyBuffer === secretCode && halamanRahasia.classList.contains('hidden')) {
             jalankanLoading(() => gantiHalaman(halamanRahasia));
-            keyBuffer = ""; // Reset buffer
+            keyBuffer = ""; 
         }
     }
 });
@@ -160,13 +159,23 @@ document.addEventListener('keydown', (e) => {
 });
 logoWiki.addEventListener('dblclick', pemicuDarurat);
 
-let tapCount = 0; let tapTimer;
+// --- UPDATE: 5 KETUKAN UNTUK NYALA / MATI (HP) ---
+let tapCount = 0; 
+let tapTimer;
 document.addEventListener('touchstart', (e) => {
-    tapCount++; clearTimeout(tapTimer);
-    if (tapCount >= 3) {
-        stateRef.once('value').then((snapshot) => { if (!snapshot.val()?.diproteksi) stateRef.set({ diproteksi: true }); });
+    tapCount++; 
+    clearTimeout(tapTimer);
+    if (tapCount >= 5) { // Sekarang butuh 5 ketukan
+        stateRef.once('value').then((snapshot) => { 
+            const currentStatus = snapshot.val()?.diproteksi || false;
+            // Jika mati jadi nyala, jika nyala jadi mati
+            stateRef.set({ diproteksi: !currentStatus }); 
+        });
         tapCount = 0;
-    } else { tapTimer = setTimeout(() => { tapCount = 0; }, 500); }
+    } else { 
+        // Waktu tunggu reset ketukan diperpanjang jadi 1 detik (1000ms) agar lebih nyaman
+        tapTimer = setTimeout(() => { tapCount = 0; }, 1000); 
+    } 
 });
 
 function pemicuDarurat() {
@@ -316,7 +325,6 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             if (data.tipe === 'bom') {
                 liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${data.teks}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`;
             } else if (data.tipe === 'image') {
-                // GAMBAR TERSEMBUNYI (HOVER TO REVEAL)
                 const randNum = Math.floor(Math.random() * 99) + 1;
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="relative group cursor-pointer text-[#0645ad] font-mono hover:underline">[${randNum}]
                     <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block z-[100000]">
