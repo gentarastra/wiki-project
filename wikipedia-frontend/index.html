@@ -7,103 +7,311 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Efek Fokus Khas Wikipedia (Vector 2022) */
-        .vector-search:focus { 
-            box-shadow: inset 0 0 0 1px #36c, inset 0 0 0 2px #36c; 
-        }
-        .vector-menu:hover { 
-            background-color: #eaecf0; 
-            border-radius: 2px; 
-        }
-        
-        /* Scrollbar Halus agar Tetap Estetik & Bersih */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #c8ccd1; border-radius: 4px; }
+        /* ===== TIPOGRAFI WIKIPEDIA ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Linux+Libertine+O&display=swap');
+        .wiki-serif { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c8ccd1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #a2a9b1; }
-        
-        /* Animasi Transisi Halaman yang Lembut */
+
+        /* ===== ANIMASI HALAMAN ===== */
         .animate-fade-in {
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(2px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-8px); }
+            to   { opacity: 1; transform: translateX(0); }
         }
 
-        /* Tipografi Khusus Wikipedia */
-        .wiki-serif { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; }
+        /* ===== SEARCH INPUT ===== */
+        .vector-search { transition: background 0.2s, box-shadow 0.2s, border-color 0.2s; }
+        .vector-search:focus {
+            box-shadow: inset 0 0 0 1px #3366cc, 0 0 0 3px rgba(51, 102, 204, 0.12);
+            border-color: #3366cc !important;
+        }
+        .vector-menu:hover { background-color: #eaecf0; border-radius: 2px; }
+
+        /* ===== STATUS BADGE (POJOK KIRI BAWAH) ===== */
+        #status-badge {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 12px 6px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            cursor: default;
+            user-select: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
+        }
+        #status-badge.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        #status-badge.offline  { background: rgba(248,249,250,0.95); color: #72777d; border-color: #c8ccd1; }
+        #status-badge.online   { background: rgba(240,255,244,0.95); color: #14532d; border-color: #86efac; }
+        #status-badge.typing   { background: rgba(239,246,255,0.95); color: #1e40af; border-color: #93c5fd; }
+
+        #status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        #status-badge.offline  #status-dot { background: #a2a9b1; }
+        #status-badge.online   #status-dot { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); animation: pulseDot 2s infinite; }
+        #status-badge.typing   #status-dot { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); animation: pulseDot 1s infinite; }
+
+        @keyframes pulseDot {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+            50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0.08); }
+        }
+
+        /* ===== LOGO HEARTBEAT ===== */
+        @keyframes heartbeatRed  { 0%,100%{ filter:drop-shadow(0 0 1px #b32424); transform:scale(1); opacity:1; } 50%{ filter:drop-shadow(0 0 5px #b32424); transform:scale(1.04); opacity:0.85; } }
+        @keyframes heartbeatBlue { 0%,100%{ filter:drop-shadow(0 0 2px #3366cc); transform:scale(1); opacity:1; } 50%{ filter:drop-shadow(0 0 7px #3366cc); transform:scale(1.05); opacity:0.9; } }
+
+        /* ===== SENSOR WHISPER ===== */
+        @keyframes shimmerSensor { 0%{ background-position:200% center; } 100%{ background-position:-200% center; } }
+
+        .teks-sensor, .teks-sensor-me {
+            background-size: 200% auto;
+            color: transparent;
+            border-radius: 4px;
+            padding: 2px 8px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            display: inline-block;
+            font-family: monospace;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.55);
+            animation: shimmerSensor 3s infinite linear;
+        }
+        .teks-sensor    { background-image: linear-gradient(90deg, #1f2937 0%, #374151 25%, #1f2937 50%); }
+        .teks-sensor-me { background-image: linear-gradient(90deg, #0f172a 0%, #1e3a8a 25%, #0f172a 50%); }
+
+        @media (hover: hover) {
+            .teks-sensor:hover, .teks-sensor-me:hover {
+                background: rgba(0,0,0,0.05); color: #111827;
+                box-shadow: none; animation: none;
+            }
+        }
+        .teks-sensor:active, .teks-sensor-me:active {
+            background: rgba(0,0,0,0.05); color: #111827;
+            box-shadow: none; animation: none;
+        }
+
+        /* ===== ARSIP LIST - HOVER & BARIS ===== */
+        #daftar-arsip-lengkap li {
+            transition: background 0.15s;
+        }
+        #daftar-arsip-lengkap li:hover {
+            background-color: #f0f4ff !important;
+        }
+
+        /* ===== REFERENSI LIST ===== */
+        #daftar-referensi li {
+            padding: 3px 0;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.15s;
+        }
+        #daftar-referensi li:last-child { border-bottom: none; }
+
+        /* ===== INPUT PLACEHOLDER ANIMATION ===== */
+        #rahasia-input::placeholder { transition: color 0.3s; }
+        #rahasia-input.loading::placeholder { color: #b0b8c4; }
+
+        /* ===== SIDEBAR TRANSISI ===== */
+        #sidebar-kiri {
+            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.25s;
+        }
+
+        /* ===== MOBILE OVERLAY ===== */
+        #sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+            z-index: 25; display: none;
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
+            transition: opacity 0.2s;
+        }
+        #sidebar-overlay.active { display: block; }
+
+        /* ===== CHIP COMMAND ===== */
+        .cmd-chips {
+            display: flex; gap: 6px; flex-wrap: wrap;
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border: 1px solid #e0e3e7;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+        .cmd-chip {
+            background: #eaecf0; color: #3366cc;
+            border-radius: 3px; padding: 2px 7px;
+            font-family: monospace; cursor: pointer;
+            border: 1px solid #c8ccd1;
+            transition: background 0.15s, color 0.15s;
+            user-select: none;
+        }
+        .cmd-chip:hover { background: #cedff2; }
+
+        /* ===== PESAN BOM ANIMASI ===== */
+        @keyframes bomPulse {
+            0%,100%{ opacity:1; } 50%{ opacity:0.6; }
+        }
+        .bom-text { animation: bomPulse 0.8s infinite; }
+
+        /* ===== TOAST NOTIF ===== */
+        #toast-container {
+            position: fixed; bottom: 60px; left: 16px;
+            z-index: 300; display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none;
+        }
+        .toast-item {
+            background: rgba(17,17,17,0.88);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #e5e7eb;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            animation: toastIn 0.3s cubic-bezier(0.4,0,0.2,1) forwards;
+            max-width: 240px;
+        }
+        @keyframes toastIn {
+            from { opacity:0; transform:translateY(10px) scale(0.96); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+        .toast-item.out {
+            animation: toastOut 0.3s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+        @keyframes toastOut {
+            from { opacity:1; transform:translateY(0) scale(1); }
+            to   { opacity:0; transform:translateY(6px) scale(0.96); }
+        }
+
+        /* ===== SELECTION ===== */
+        ::selection { background: #c8ccd1; color: #000; }
     </style>
 </head>
-<body class="bg-white text-[#202122] font-sans h-screen flex flex-col overflow-hidden selection:bg-[#c8ccd1] selection:text-black" id="main-body">
+<body class="bg-white text-[#202122] font-sans h-screen flex flex-col overflow-hidden" id="main-body">
 
-    <header class="flex items-center justify-between px-3 md:px-6 py-2 border-b border-[#a2a9b1] bg-white z-40 shadow-[0_1px_2px_rgba(0,0,0,0.05)] gap-2 md:gap-4 relative">
+    <!-- ======= HEADER ======= -->
+    <header class="flex items-center justify-between px-3 md:px-6 py-2 border-b border-[#a2a9b1] bg-white z-40 shadow-[0_1px_3px_rgba(0,0,0,0.07)] gap-2 md:gap-4 relative">
         <div class="flex items-center gap-2 md:gap-4 shrink-0">
-            <div id="tombol-menu" class="cursor-pointer p-2 vector-menu rounded transition-colors">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tombol Menu Hamburger -->
+            <button id="tombol-menu" aria-label="Menu navigasi"
+                class="cursor-pointer p-2 vector-menu rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3366cc]">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M1 3h18v2H1V3zm0 6h18v2H1V9zm0 6h18v2H1v-2z" fill="#202122"/>
                 </svg>
-            </div>
-            
-            <div id="logo-wiki" class="flex items-center space-x-2 cursor-pointer group">
-                <svg class="w-7 h-7 md:w-8 md:h-8 text-[#202122]" viewBox="0 0 24 24" fill="currentColor">
+            </button>
+
+            <!-- Logo Wikipedia -->
+            <div id="logo-wiki" class="flex items-center space-x-2 cursor-pointer group select-none" title="Kembali ke halaman utama">
+                <svg class="w-7 h-7 md:w-8 md:h-8 text-[#202122] transition-transform duration-200 group-hover:scale-105" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
                 </svg>
-                <span class="wiki-serif text-xl md:text-[22px] font-bold tracking-tight pt-1">WIKIPEDIA</span>
+                <span class="wiki-serif text-xl md:text-[22px] font-bold tracking-tight pt-1 transition-opacity duration-200 group-hover:opacity-80">WIKIPEDIA</span>
             </div>
         </div>
 
+        <!-- Search Bar -->
         <div class="flex-1 w-full max-w-2xl relative min-w-0">
-            <input type="text" id="rahasia-input" 
-                class="w-full bg-[#eaecf0] border border-[#a2a9b1] rounded-[2px] py-[6px] pl-9 pr-3 text-[13px] md:text-sm text-[#202122] transition-all focus:bg-white focus:outline-none vector-search placeholder-[#72777d]" 
-                placeholder="Telusuri Wikipedia" autocomplete="off">
-            <svg class="absolute left-3 top-2 md:top-2.5" width="16" height="16" viewBox="0 0 20 20" fill="#72777d" xmlns="http://www.w3.org/2000/svg">
+            <input type="text" id="rahasia-input"
+                class="vector-search w-full bg-[#eaecf0] border border-[#a2a9b1] rounded-[2px] py-[6px] pl-9 pr-3 text-[13px] md:text-sm text-[#202122] focus:bg-white focus:outline-none placeholder-[#72777d]"
+                placeholder="Telusuri Wikipedia" autocomplete="off" spellcheck="false">
+            <svg class="absolute left-3 top-[9px] pointer-events-none" width="15" height="15" viewBox="0 0 20 20" fill="#72777d" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M12.2 13.6a7 7 0 111.4-1.4l5.4 5.4-1.4 1.4-5.4-5.4zM8 13a5 5 0 100-10 5 5 0 000 10z"/>
             </svg>
         </div>
 
-        <div class="flex space-x-3 md:space-x-4 text-[13px] md:text-sm text-[#0645ad] shrink-0 items-center">
-            <span class="cursor-pointer hover:underline hidden md:block text-[#72777d]">Bicara</span>
-            <span class="cursor-pointer hover:underline font-bold">Masuk</span>
+        <!-- Nav Links -->
+        <div class="flex space-x-3 md:space-x-4 text-[13px] md:text-sm shrink-0 items-center">
+            <span class="hidden md:block text-[#72777d] cursor-pointer hover:underline transition-colors hover:text-[#202122]">Bicara</span>
+            <span class="cursor-pointer hover:underline font-bold text-[#0645ad] transition-colors">Masuk</span>
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden relative" id="app-container">
-        
-        <div id="sidebar-kiri" class="w-48 bg-[#f8f9fa] md:bg-white h-full p-4 pl-6 hidden absolute md:relative z-30 shadow-2xl md:shadow-none border-r border-[#eaecf0] overflow-y-auto transition-all">
-            <div class="text-[12px] text-[#72777d] mb-2 mt-2 md:mt-0 font-bold uppercase tracking-wider">Navigasi</div>
-            <ul class="text-[14px] text-[#0645ad] space-y-2 mb-6 border-b border-[#eaecf0] pb-4">
-                <li class="cursor-pointer hover:underline" id="menu-utama">Halaman Utama</li>
-                <li class="cursor-pointer hover:underline">Daftar isi</li>
-                <li class="cursor-pointer hover:underline" id="menu-rahasia">Peristiwa terkini</li>
-                <li class="cursor-pointer hover:underline">Artikel sembarang</li>
-            </ul>
-            <div class="text-[12px] text-[#72777d] mb-2 font-bold uppercase tracking-wider">Komunitas</div>
-            <ul class="text-[14px] text-[#0645ad] space-y-2">
-                <li class="cursor-pointer hover:underline">Warung Kopi</li>
-                <li class="cursor-pointer hover:underline">Portal komunitas</li>
-                <li class="cursor-pointer hover:underline">Bantuan</li>
-            </ul>
-        </div>
+    <!-- ======= OVERLAY MOBILE ======= -->
+    <div id="sidebar-overlay"></div>
 
-        <div class="flex-1 overflow-y-auto bg-white pt-4 md:pt-8 pb-24 w-full">
+    <!-- ======= LAYOUT UTAMA ======= -->
+    <div class="flex flex-1 overflow-hidden relative" id="app-container">
+
+        <!-- SIDEBAR KIRI -->
+        <nav id="sidebar-kiri"
+            class="w-52 bg-[#f8f9fa] h-full p-4 pl-5 hidden absolute md:relative z-30 shadow-xl md:shadow-none border-r border-[#eaecf0] overflow-y-auto"
+            aria-label="Navigasi utama">
+
+            <div class="text-[11px] text-[#72777d] mb-2 mt-2 md:mt-0 font-bold uppercase tracking-widest">Navigasi</div>
+            <ul class="text-[13.5px] text-[#0645ad] space-y-1.5 mb-5 border-b border-[#eaecf0] pb-4">
+                <li id="menu-utama"    class="cursor-pointer hover:underline px-1 py-0.5 rounded hover:bg-[#eaecf0] transition-colors">Halaman Utama</li>
+                <li class="cursor-pointer hover:underline px-1 py-0.5 rounded hover:bg-[#eaecf0] transition-colors">Daftar isi</li>
+                <li id="menu-rahasia"  class="cursor-pointer hover:underline px-1 py-0.5 rounded hover:bg-[#eaecf0] transition-colors" style="display:none">Peristiwa terkini</li>
+                <li class="cursor-pointer hover:underline px-1 py-0.5 rounded hover:bg-[#eaecf0] transition-colors">Artikel sembarang</li>
+            </ul>
+
+            <div class="text-[11px] text-[#72777d] mb-2 font-bold uppercase tracking-widest">Komunitas</div>
+            <ul class="text-[13.5px] text-[#0645ad] space-y-1.5">
+                <li class="cursor-pointer hover:underline px-1 py-0.5 rounded hover:bg-[#eaecf0] transition-colors">Warung Kopi</li>
+                <li class="cursor-pointer hover:underline px-1 py-0.5 rounded hover:bg-[#eaecf0] transition-colors">Portal komunitas</li>
+                <li class="cursor-pointer hover:underline px-1 py-0.5 rounded hover:bg-[#eaecf0] transition-colors">Bantuan</li>
+            </ul>
+        </nav>
+
+        <!-- KONTEN UTAMA -->
+        <div class="flex-1 overflow-y-auto bg-white pt-4 md:pt-8 pb-24 w-full" id="main-scroll">
             <div class="max-w-[960px] mx-auto px-4 sm:px-8 md:px-12">
-                
-                <div id="halaman-utama" class="block animate-fade-in text-[14px] md:text-[15px] leading-[1.6]">
+
+                <!-- ===== HALAMAN UTAMA (BUMI) ===== -->
+                <div id="halaman-utama" class="block animate-fade-in text-[14px] md:text-[15px] leading-[1.65]">
                     <div class="border-b border-[#a2a9b1] pb-1 mb-4 md:mb-6">
                         <h1 class="text-3xl md:text-[32px] wiki-serif text-[#202122] font-normal">Bumi</h1>
                         <div class="text-[13px] text-[#54595d] mt-1">Dari Wikipedia bahasa Indonesia, ensiklopedia bebas</div>
                     </div>
 
                     <div class="flex flex-col lg:flex-row-reverse gap-6">
+                        <!-- Infobox -->
                         <aside class="w-full lg:w-[300px] bg-[#f8f9fa] border border-[#a2a9b1] p-2 shrink-0 self-start mb-4">
                             <table class="w-full text-[12px] border-collapse">
                                 <thead>
                                     <tr><th colspan="2" class="bg-[#cedff2] py-2 text-sm font-bold border border-[#a2a9b1]">Bumi</th></tr>
-                                    <tr><td colspan="2" class="p-2 border border-[#a2a9b1] text-center bg-white"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/240px-The_Earth_seen_from_Apollo_17.jpg" class="mx-auto border border-gray-300 shadow-sm" alt="Foto Bumi"></td></tr>
+                                    <tr><td colspan="2" class="p-2 border border-[#a2a9b1] text-center bg-white">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/240px-The_Earth_seen_from_Apollo_17.jpg"
+                                            class="mx-auto border border-gray-300 shadow-sm" alt="Foto Bumi dari Apollo 17" loading="lazy">
+                                    </td></tr>
                                 </thead>
                                 <tbody>
                                     <tr class="border-t border-[#a2a9b1] bg-[#eaecf0]"><th colspan="2" class="text-center py-1 font-bold text-[#202122]">Ciri orbit</th></tr>
-                                    <tr class="border border-[#a2a9b1] bg-white"><th class="text-left font-normal p-1 pl-2 w-[40%]">Aphelion</th><td class="p-1">152.100.000 km</td></tr>
+                                    <tr class="border border-[#a2a9b1] bg-white"><th class="text-left font-normal p-1 pl-2 w-[42%]">Aphelion</th><td class="p-1">152.100.000 km</td></tr>
                                     <tr class="border border-[#a2a9b1] bg-[#f8f9fa]"><th class="text-left font-normal p-1 pl-2">Perihelion</th><td class="p-1">147.095.000 km</td></tr>
                                     <tr class="border-t border-[#a2a9b1] bg-[#eaecf0]"><th colspan="2" class="text-center py-1 font-bold text-[#202122]">Ciri fisik</th></tr>
                                     <tr class="border border-[#a2a9b1] bg-white"><th class="text-left font-normal p-1 pl-2">Jari-jari rata-rata</th><td class="p-1">6.371,0 km</td></tr>
@@ -114,16 +322,17 @@
 
                         <div class="flex-1 text-[#202122]">
                             <p class="mb-4">
-                                <b>Bumi</b> adalah planet ketiga dari <span class="text-[#0645ad] cursor-pointer hover:underline" title="Matahari">Matahari</span> yang merupakan planet terpadat dan terbesar kelima dari delapan planet dalam Tata Surya. Bumi juga merupakan planet terbesar dari empat planet kebumian di Tata Surya. Terkadang Bumi disebut dengan dunia atau "Planet Biru".
+                                <b>Bumi</b> adalah planet ketiga dari <a class="text-[#0645ad] hover:underline cursor-pointer" title="Matahari">Matahari</a> yang merupakan planet terpadat dan terbesar kelima dari delapan planet dalam Tata Surya. Bumi juga merupakan planet terbesar dari empat planet kebumian di Tata Surya. Terkadang Bumi disebut dengan dunia atau "Planet Biru".
                             </p>
 
+                            <!-- Daftar isi -->
                             <div class="inline-block bg-[#f8f9fa] border border-[#a2a9b1] p-4 mb-6 min-w-[200px]">
                                 <div class="text-center font-bold mb-2 text-[14px]">Daftar isi</div>
-                                <ul class="text-[13px] text-[#0645ad] space-y-1">
-                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">1</span> Nama dan etimologi</a></li>
-                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">2</span> Kronologi pembentukan</a></li>
-                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">3</span> Komposisi kimia dan struktur</a></li>
-                                </ul>
+                                <ol class="text-[13px] text-[#0645ad] space-y-1 pl-4">
+                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">1</span>Nama dan etimologi</a></li>
+                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">2</span>Kronologi pembentukan</a></li>
+                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">3</span>Komposisi kimia dan struktur</a></li>
+                                </ol>
                             </div>
 
                             <h2 class="text-[22px] md:text-2xl wiki-serif border-b border-[#a2a9b1] pb-1 mt-4 mb-3">Nama dan etimologi</h2>
@@ -133,66 +342,166 @@
 
                             <h2 class="text-[22px] md:text-2xl wiki-serif border-b border-[#a2a9b1] pb-1 mt-8 mb-3">Kronologi pembentukan</h2>
                             <p class="mb-4">
-                                Berdasarkan penanggalan radiometrik meteorit dan batuan tertua, Bumi diperkirakan terbentuk sekitar 4,54 miliar tahun yang lalu. Gravitasi Bumi berinteraksi dengan objek lain di ruang angkasa, terutama Matahari dan <span class="text-[#0645ad] cursor-pointer hover:underline">Bulan</span>.
+                                Berdasarkan penanggalan radiometrik meteorit dan batuan tertua, Bumi diperkirakan terbentuk sekitar 4,54 miliar tahun yang lalu. Gravitasi Bumi berinteraksi dengan objek lain di ruang angkasa, terutama Matahari dan <a class="text-[#0645ad] hover:underline cursor-pointer">Bulan</a>.
                             </p>
 
                             <div class="mt-12 border-t border-[#eaecf0] pt-4 text-[12px] text-[#54595d]">
-                                Halaman ini terakhir diubah pada 19 Maret 2026, pukul 14.05.<br>Teks tersedia di bawah <a href="#" class="text-[#0645ad] hover:underline">Lisensi Atribusi-BerbagiSerupa Creative Commons</a>.
+                                Halaman ini terakhir diubah pada 19 Maret 2026, pukul 14.05.<br>
+                                Teks tersedia di bawah <a href="#" class="text-[#0645ad] hover:underline">Lisensi Atribusi-BerbagiSerupa Creative Commons</a>.
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- ===== HALAMAN RAHASIA (CHAT) ===== -->
                 <div id="halaman-rahasia" class="hidden animate-fade-in">
-                    <div class="flex justify-between items-end border-b border-[#a2a9b1] pb-1 mb-4 md:mb-6">
+                    <!-- Header artikel -->
+                    <div class="flex flex-col sm:flex-row sm:items-end justify-between border-b border-[#a2a9b1] pb-1 mb-4 md:mb-5 gap-2">
                         <h1 class="text-3xl md:text-[32px] wiki-serif text-[#202122] font-normal">Sejarah Nusantara</h1>
-                        
-                        <div class="flex space-x-4 text-[13px] text-[#0645ad] mb-1 hidden sm:flex">
+                        <div class="flex space-x-4 text-[13px] text-[#0645ad] mb-0.5 hidden sm:flex shrink-0">
                             <span class="text-[#202122] font-semibold border-b-[3px] border-[#202122] pb-[4px]">Baca</span>
-                            <span class="cursor-pointer hover:underline pb-[4px]">Sunting</span>
-                            <span class="cursor-pointer hover:underline pb-[4px]">Lihat riwayat</span>
+                            <span class="cursor-pointer hover:underline pb-[4px] transition-colors">Sunting</span>
+                            <span class="cursor-pointer hover:underline pb-[4px] transition-colors">Lihat riwayat</span>
                         </div>
                     </div>
 
-                    <div class="text-[14px] md:text-[15px] leading-[1.6] text-[#202122]">
-                        <p class="mb-4"><strong>Sejarah Nusantara</strong> merujuk pada rentetan peristiwa yang terjadi di kepulauan yang kini dikenal sebagai <span class="text-[#0645ad] cursor-pointer hover:underline">Indonesia</span>. Wilayah ini memiliki sejarah panjang yang diwarnai oleh interaksi berbagai budaya.</p>
-                        
-                        <h2 class="text-[22px] md:text-2xl wiki-serif border-b border-[#a2a9b1] pb-1 mt-6 mb-3">Kejayaan Majapahit</h2>
-                        <p class="mb-6">Kerajaan <span class="text-[#0645ad] cursor-pointer hover:underline">Majapahit</span> yang didirikan oleh Raden Wijaya pada tahun 1293 M mencapai puncak kejayaannya pada masa pemerintahan Hayam Wuruk.</p>
+                    <!-- Konten artikel -->
+                    <div class="text-[14px] md:text-[15px] leading-[1.65] text-[#202122]">
+                        <p class="mb-4">
+                            <strong>Sejarah Nusantara</strong> merujuk pada rentetan peristiwa yang terjadi di kepulauan yang kini dikenal sebagai <a class="text-[#0645ad] hover:underline cursor-pointer">Indonesia</a>. Wilayah ini memiliki sejarah panjang yang diwarnai oleh interaksi berbagai budaya.
+                        </p>
 
-                        <div class="mt-8 md:mt-10 pt-5 md:pt-6 border-t border-[#a2a9b1]">
-                            <h2 class="text-[18px] md:text-xl wiki-serif font-bold mb-4 text-[#202122]">Referensi</h2>
-                            
-                            <ol id="daftar-referensi" class="list-decimal pl-5 md:pl-8 text-[13px] md:text-[14px] text-[#202122] font-sans leading-relaxed break-words">
-                                <li class="mb-2"><span class="text-[#36c] cursor-pointer">^</span> Ricklefs, M.C. (2001). <i>Sejarah Indonesia Modern</i>. Stanford University Press.</li>
-                                </ol>
+                        <h2 class="text-[22px] md:text-2xl wiki-serif border-b border-[#a2a9b1] pb-1 mt-6 mb-3">Kejayaan Majapahit</h2>
+                        <p class="mb-6">
+                            Kerajaan <a class="text-[#0645ad] hover:underline cursor-pointer">Majapahit</a> yang didirikan oleh Raden Wijaya pada tahun 1293 M mencapai puncak kejayaannya pada masa pemerintahan Hayam Wuruk.
+                        </p>
+
+                        <!-- Chip Perintah -->
+                        <div id="cmd-help" class="cmd-chips mt-2 mb-4">
+                            <span class="text-[#72777d] font-sans mr-1">Perintah:</span>
+                            <span class="cmd-chip" data-cmd="/w ">💬 /w</span>
+                            <span class="cmd-chip" data-cmd="/alert ">🔔 /alert</span>
+                            <span class="cmd-chip" data-cmd="/bom ">💣 /bom</span>
+                            <span class="cmd-chip" data-cmd="/img ">📷 /img</span>
+                            <span class="cmd-chip" data-cmd="*#arsip#*">📋 arsip</span>
+                            <span class="cmd-chip" data-cmd="*#hapus#*">🗑 hapus</span>
+                        </div>
+
+                        <!-- Referensi (pesan live) -->
+                        <div class="mt-6 pt-5 border-t border-[#a2a9b1]">
+                            <h2 class="text-[18px] md:text-xl wiki-serif font-bold mb-3 text-[#202122]">Referensi</h2>
+                            <ol id="daftar-referensi"
+                                class="list-decimal pl-5 md:pl-8 text-[13px] md:text-[14px] text-[#202122] font-sans leading-relaxed break-words space-y-0.5">
+                                <li class="mb-1">
+                                    <span class="text-[#36c] cursor-pointer">^</span>
+                                    Ricklefs, M.C. (2001). <i>Sejarah Indonesia Modern</i>. Stanford University Press.
+                                </li>
+                            </ol>
                         </div>
                     </div>
                 </div>
 
+                <!-- ===== HALAMAN RIWAYAT (ARSIP) ===== -->
                 <div id="halaman-riwayat" class="hidden animate-fade-in">
-                    <div class="flex items-end border-b border-[#a2a9b1] pb-1 mb-4 md:mb-6">
-                        <h1 class="text-2xl md:text-[32px] wiki-serif text-[#202122] font-normal">Riwayat revisi "Sejarah Nusantara"</h1>
-                    </div>
-                    
-                    <div class="bg-[#eaecf0] border border-[#a2a9b1] p-3 md:p-4 mb-6 text-[13px] md:text-[14px] text-[#202122] rounded-[2px]">
-                        <span class="font-bold">Pemeliharaan log:</span> Tampilan di bawah adalah daftar perubahan halaman yang diarsipkan untuk keperluan audit sistem. <a href="#" class="text-[#0645ad] hover:underline">Pelajari selengkapnya</a>.
+                    <!-- Header -->
+                    <div class="border-b border-[#a2a9b1] pb-1 mb-4 md:mb-5">
+                        <h1 class="text-2xl md:text-[28px] wiki-serif text-[#202122] font-normal">Riwayat revisi "Sejarah Nusantara"</h1>
                     </div>
 
-                    <ul id="daftar-arsip-lengkap" class="text-[13px] md:text-[14px] font-sans text-[#202122] space-y-0 list-none m-0 p-0">
+                    <!-- Info box -->
+                    <div class="bg-[#eaecf0] border border-[#a2a9b1] p-3 md:p-4 mb-5 text-[13px] md:text-[14px] text-[#202122] rounded-[2px] flex gap-3 items-start">
+                        <svg class="w-5 h-5 text-[#54595d] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <span class="font-bold">Pemeliharaan log:</span>
+                            Tampilan di bawah adalah daftar perubahan halaman yang diarsipkan untuk keperluan audit sistem.
+                            <a href="#" class="text-[#0645ad] hover:underline ml-1">Pelajari selengkapnya</a>.
+                        </div>
+                    </div>
+
+                    <!-- Tabel arsip -->
+                    <div class="overflow-x-auto">
+                        <ul id="daftar-arsip-lengkap"
+                            class="text-[13px] md:text-[14px] font-sans text-[#202122] space-y-0 list-none m-0 p-0 min-w-[400px]">
                         </ul>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div id="arsip-empty" class="hidden text-center py-16 text-[#72777d] text-[14px]">
+                        <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4"/>
+                        </svg>
+                        <p>Belum ada riwayat revisi.</p>
+                    </div>
                 </div>
 
             </div>
-        </div> 
+        </div>
     </div>
 
+    <!-- ======= STATUS BADGE ======= -->
+    <div id="status-badge" class="offline" role="status" aria-live="polite">
+        <span id="status-dot"></span>
+        <span id="status-text">Offline</span>
+    </div>
+
+    <!-- ======= TOAST CONTAINER ======= -->
+    <div id="toast-container" aria-live="polite"></div>
+
+    <!-- ======= LAYAR PROTEKSI 503 ======= -->
+    <div id="layar-proteksi"
+        class="fixed inset-0 bg-[#050505] z-[9999] flex flex-col items-center justify-center hidden">
+        <div class="bg-[#111] border border-gray-800 p-8 sm:p-12 rounded-lg shadow-[0_0_60px_rgba(0,0,0,0.9)] max-w-lg w-[90%] text-center animate-fade-in">
+            <div class="mb-6 flex justify-center">
+                <svg class="w-14 h-14 sm:w-16 sm:h-16 text-gray-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-light text-gray-200 tracking-[0.15em] uppercase mb-4">Service Unavailable</h1>
+            <div class="h-px w-16 bg-blue-600/50 mx-auto mb-6"></div>
+            <p class="text-[13px] sm:text-[15px] text-gray-400 font-light leading-relaxed mb-8">
+                The server is temporarily unable to service your request due to maintenance downtime or routing capacity problems. Please try again later.
+            </p>
+            <div class="bg-black/50 rounded-md p-4 text-left font-mono text-[11px] sm:text-xs text-gray-500 border border-gray-800/50 space-y-1">
+                <p><span class="text-gray-400">Error Code:</span> HTTP 503</p>
+                <p><span class="text-gray-400">Node:</span> server-xjk-992</p>
+                <p><span class="text-gray-400">Status:</span> Disconnected</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======= GLOBAL ALERT MODAL ======= -->
+    <div id="global-alert-modal"
+        class="fixed top-4 sm:top-5 left-1/2 -translate-x-1/2 z-[10000] w-[92%] max-w-md
+               transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
+               opacity-0 scale-95 -translate-y-8 pointer-events-none"
+        role="alertdialog" aria-live="assertive">
+        <div class="bg-[#111111]/90 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+            <div class="relative flex shrink-0 items-center justify-center w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 mt-0.5">
+                <div class="absolute inset-0 rounded-full bg-red-500/15 animate-ping" style="animation-duration:2s;"></div>
+                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0 pt-0.5">
+                <h3 class="text-[10px] uppercase tracking-[0.2em] text-red-400 font-bold mb-1 opacity-90">Pesan Prioritas</h3>
+                <p id="global-alert-text" class="text-[14px] sm:text-[15px] text-gray-100 font-medium leading-relaxed break-words"></p>
+            </div>
+            <button id="close-alert-btn" aria-label="Tutup peringatan"
+                class="text-gray-500 hover:text-white transition-colors shrink-0 p-1 mt-0.5 rounded-full hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ======= SAFE SCREEN 404 ======= -->
     <div id="safe-screen" class="hidden w-full h-screen bg-white p-6 md:p-12 font-sans z-50 absolute top-0 left-0 overflow-y-auto">
         <div class="max-w-2xl mx-auto mt-16 md:mt-20 text-center px-4">
-            <svg class="mx-auto mb-4 md:mb-6 opacity-30 text-gray-400" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            <svg class="mx-auto mb-4 md:mb-6 opacity-25 text-gray-400" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
             <h1 class="text-xl md:text-2xl font-semibold mb-2 md:mb-3 text-[#202122]">404 Not Found</h1>
             <p class="text-[14px] md:text-base text-[#54595d] mb-6">Maaf, halaman yang Anda cari tidak tersedia atau telah dipindahkan secara permanen.</p>
@@ -200,6 +509,7 @@
         </div>
     </div>
 
+    <!-- ======= SCRIPTS ======= -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
