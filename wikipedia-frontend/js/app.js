@@ -424,13 +424,27 @@ function pemicuDarurat() {
     stateRef.once('value').then(snap => stateRef.set({ diproteksi:!(snap.val()?.diproteksi||false) }));
 }
 logoWiki.addEventListener('dblclick', pemicuDarurat);
-let tapCount = 0, tapTimer;
-document.addEventListener('touchstart', () => {
-    tapCount++;
-    clearTimeout(tapTimer);
-    if (tapCount >= 5) { pemicuDarurat(); tapCount = 0; }
-    else tapTimer = setTimeout(() => { tapCount = 0; }, 1000);
-}, { passive:true });
+
+// Gestur mobile: tahan 3 jari selama 1.5 detik
+// - Tidak terpicu saat zoom (2 jari)
+// - Tidak terpicu saat tap biasa (1 jari)
+let longPressTimer = null;
+document.addEventListener('touchstart', e => {
+    if (e.touches.length === 3) {
+        longPressTimer = setTimeout(() => {
+            pemicuDarurat();
+            longPressTimer = null;
+        }, 1500);
+    }
+}, { passive: true });
+
+document.addEventListener('touchend', () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}, { passive: true });
+
+document.addEventListener('touchmove', () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}, { passive: true });
 
 stateRef.on('value', snap => {
     if (snap.val()?.diproteksi) { layarProteksi.classList.remove('hidden'); document.title = "503 Service Unavailable"; chatInput.blur(); }
