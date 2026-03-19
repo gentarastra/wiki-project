@@ -206,6 +206,7 @@ function prosesAuth() {
 function onAuthBerhasil() {
     tutupAuth();
     jalankanPembersihOtomatis();
+    mulaiDengarkanChat(); // ← listener baru dimulai SETELAH KUNCI_SESI terisi
     if (pendingAction) {
         pendingAction();
     } else {
@@ -613,8 +614,9 @@ function mainkanSuaraKlik() {
 }
 
 // =========================================================================
-// 21. RENDER REALTIME
+// 21. RENDER REALTIME — dipanggil HANYA setelah auth berhasil
 // =========================================================================
+function mulaiDengarkanChat() {
 chatRef.limitToLast(50).on('child_added', snap => {
     const data        = snap.val();
     const isMe        = data.senderId === myId;
@@ -748,7 +750,8 @@ chatRef.limitToLast(50).on('child_added', snap => {
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) {
         requestAnimationFrame(() => { if (mainScroll) mainScroll.scrollTo({ top:mainScroll.scrollHeight, behavior:'smooth' }); });
     }
-});
+}); // end child_added
+} // end mulaiDengarkanChat
 
 // =========================================================================
 // 22. LOG ALERT DI ARSIP
