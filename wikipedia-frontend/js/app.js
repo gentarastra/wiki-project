@@ -1,5 +1,5 @@
 // =========================================================================
-// WIKIPEDIA GHOST CHAT (APP.JS) - CLASSIC GHOST ENTRY
+// WIKIPEDIA GHOST CHAT (APP.JS) - CLASSIC GHOST ENTRY (BUG FIX)
 // =========================================================================
 
 // --- 0. KONFIGURASI FIREBASE ---
@@ -18,7 +18,6 @@ const chatRef = database.ref('wiki_history');
 const stateRef = database.ref('status_global'); 
 const typingRef = database.ref('status_mengetik');
 
-// FIX: Simpan ID perangkat agar refresh tidak dianggap orang lain
 let myId = localStorage.getItem('wiki_agen_id');
 if (!myId) {
     myId = "agen_" + Math.random().toString(36).substring(2, 9);
@@ -26,7 +25,6 @@ if (!myId) {
 }
 const waktuMulaiSesi = Date.now();
 
-// KUNCI RAHASIA E2EE (Enkripsi End-to-End)
 const KUNCI_ENKRIPSI = "ProtokolSandiNusantara2026";
 
 // --- 1. FITUR KEAMANAN: ENKRIPSI & DEKRIPSI ---
@@ -102,7 +100,6 @@ alertModal.innerHTML = `
 document.body.appendChild(alertModal);
 document.getElementById('close-alert-btn').addEventListener('click', () => { alertModal.classList.add('-translate-y-full'); setTimeout(() => alertModal.classList.add('hidden'), 500); });
 
-// WAKTU ASLI (REALTIME) SESUAI KODE ASLIMU
 function formatWaktuWiki(timestamp) {
     const dateObj = new Date(timestamp || Date.now());
     const tanggal = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -110,27 +107,35 @@ function formatWaktuWiki(timestamp) {
     return `${jam}, ${tanggal}`;
 }
 
-// --- 4. GHOST ENTRY & PRESENSI (DIKEMBALIKAN KE KODE ASLI + SUPPORT HP) ---
+// --- 4. GHOST ENTRY & PRESENSI (BUG FIX HURUF NYANGKUT) ---
 let keyBuffer = ""; const secretCode = "sandi"; 
 
-// Deteksi ketikan global (seperti kode aslimu)
+// Deteksi ketikan global (Keyboard PC/Laptop)
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { 
         keyBuffer += e.key.toLowerCase();
         if (keyBuffer.length > secretCode.length) keyBuffer = keyBuffer.slice(-secretCode.length);
+        
         if (keyBuffer === secretCode && halamanRahasia.classList.contains('hidden')) { 
-            jalankanLoading(() => gantiHalaman(halamanRahasia)); 
+            e.preventDefault(); // Mencegah browser mencetak huruf terakhir ("i")
+            jalankanLoading(() => {
+                gantiHalaman(halamanRahasia);
+                chatInput.value = ""; // Pastikan bersih setelah loading selesai
+            }); 
+            chatInput.value = ""; // Bersihkan langsung saat ini juga
             keyBuffer = ""; 
-            chatInput.value = ""; // Bersihkan teks sandi dari kolom
         }
     }
 });
 
-// Deteksi ketikan khusus HP (karena HP kadang tidak memicu event keydown dengan benar)
+// Deteksi ketikan khusus HP (Keyboard Virtual)
 chatInput.addEventListener('input', () => {
     if (chatInput.value.toLowerCase().includes(secretCode) && halamanRahasia.classList.contains('hidden')) {
-        jalankanLoading(() => gantiHalaman(halamanRahasia));
-        chatInput.value = ""; // Bersihkan teks
+        jalankanLoading(() => {
+            gantiHalaman(halamanRahasia);
+            chatInput.value = ""; // Pastikan bersih setelah loading selesai
+        });
+        chatInput.value = ""; // Bersihkan langsung saat ini juga
         keyBuffer = "";
     }
 });
@@ -226,7 +231,14 @@ function updateJudulHalaman() {
 }
 
 // --- 6. NAVIGASI ---
-function jalankanLoading(callback) { chatInput.placeholder = "Memuat..."; chatInput.classList.add('opacity-50'); setTimeout(() => { chatInput.classList.remove('opacity-50'); if(callback) callback(); }, 400); }
+function jalankanLoading(callback) { 
+    chatInput.placeholder = "Memuat..."; 
+    chatInput.classList.add('opacity-50'); 
+    setTimeout(() => { 
+        chatInput.classList.remove('opacity-50'); 
+        if(callback) callback(); 
+    }, 400); 
+}
 function gantiHalaman(tujuan) {
     halamanUtama.classList.add('hidden'); halamanRahasia.classList.add('hidden'); halamanRiwayat.classList.add('hidden'); tujuan.classList.remove('hidden');
     if (tujuan === halamanRahasia) { chatInput.placeholder = "Ketik rahasia..."; chatInput.focus(); } else { chatInput.placeholder = "Telusuri Wikipedia"; }
@@ -236,19 +248,17 @@ function gantiHalaman(tujuan) {
 menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 7. LOGIKA KIRIM CHAT (E2EE) ---
+// --- 7. LOGIKA KIRIM CHAT ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
         if (pesan === "") return;
         
-        // Cek mode pencarian normal (Halaman Utama)
         if (halamanRahasia.classList.contains('hidden')) { 
             window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; 
             return; 
         }
         
-        // Cek mode perintah rahasia
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
         if (pesan === "*#hapus#*") { chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
 
@@ -263,15 +273,13 @@ chatInput.addEventListener('keydown', (e) => {
 });
 chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
 
-// --- 8. TYPING & HEARTBEAT (KEMBALI KE GAYA HALUS/KALEM SEPERTI ASLIMU) ---
+// --- 8. TYPING & HEARTBEAT ---
 const styleHeartbeat = document.createElement('style');
 styleHeartbeat.innerHTML = `
-    /* Detak Jantung Standby (Merah - Pelan & Halus) */
     @keyframes heartbeatRed {
         0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); opacity: 1; }
         50% { filter: drop-shadow(0px 0px 4px #b32424); transform: scale(1.02); opacity: 0.8; }
     }
-    /* Detak Jantung Typing (Biru - Agak Cepat & Halus) */
     @keyframes heartbeatBlue {
         0%, 100% { filter: drop-shadow(0px 0px 2px #36c); transform: scale(1); opacity: 1; }
         50% { filter: drop-shadow(0px 0px 6px #36c); transform: scale(1.03); opacity: 0.9; }
@@ -321,7 +329,7 @@ function mainkanSuaraKlik() {
     } catch(e) {}
 }
 
-// --- 9. RENDER REALTIME (DEKRIPSI & FORMAT WIKI) ---
+// --- 9. RENDER REALTIME ---
 chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
@@ -384,7 +392,6 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(teksAsli, data.tipe, pesanBaru, data.timestamp);
     }
     
-    // PENINGKATAN KECIL: Auto-Scroll untuk pengguna HP agar pesan selalu terlihat
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) { 
         if(appContainer) {
             appContainer.scrollTo({ top: appContainer.scrollHeight, behavior: 'smooth' });
