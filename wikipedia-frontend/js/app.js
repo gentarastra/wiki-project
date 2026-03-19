@@ -1,5 +1,5 @@
 // =========================================================================
-// WIKIPEDIA GHOST CHAT (APP.JS) - ELEGANT ALERT & WHISPER MODE
+// WIKIPEDIA GHOST CHAT (APP.JS) - ELEGANT WHISPER & ALERT
 // =========================================================================
 
 // --- 0. KONFIGURASI FIREBASE ---
@@ -100,21 +100,41 @@ customStyles.innerHTML = `
     @keyframes heartbeatRed { 0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); opacity: 1; } 50% { filter: drop-shadow(0px 0px 4px #b32424); transform: scale(1.02); opacity: 0.8; } }
     @keyframes heartbeatBlue { 0%, 100% { filter: drop-shadow(0px 0px 2px #36c); transform: scale(1); opacity: 1; } 50% { filter: drop-shadow(0px 0px 6px #36c); transform: scale(1.03); opacity: 0.9; } }
     
+    @keyframes shimmerSensor {
+        0% { background-position: 200% center; }
+        100% { background-position: -200% center; }
+    }
+    
     .teks-sensor {
-        background-color: #1f2937; /* Balok hitam ala dokumen rahasia */
-        color: #1f2937;            /* Samarkan teks dengan warna background */
-        border-radius: 3px;
-        padding: 1px 6px;
-        cursor: crosshair;
-        transition: all 0.2s ease-in-out;
+        background: linear-gradient(90deg, #1f2937 0%, #374151 25%, #1f2937 50%);
+        background-size: 200% auto;
+        color: transparent;
+        border-radius: 4px;
+        padding: 2px 8px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         user-select: none;
         display: inline-block;
         font-family: monospace;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+        animation: shimmerSensor 3s infinite linear;
+        position: relative;
     }
+    
     @media (hover: hover) {
-        .teks-sensor:hover { background-color: #f3f4f6; color: #111827; box-shadow: inset 0 0 0 1px #d1d5db; text-shadow: none; }
+        .teks-sensor:hover { 
+            background: rgba(0, 0, 0, 0.04); 
+            color: #111827; 
+            box-shadow: none; 
+            animation: none;
+        }
     }
-    .teks-sensor:active { background-color: #f3f4f6; color: #111827; box-shadow: inset 0 0 0 1px #d1d5db; text-shadow: none; }
+    .teks-sensor:active { 
+        background: rgba(0, 0, 0, 0.04); 
+        color: #111827; 
+        box-shadow: none; 
+        animation: none;
+    }
 `;
 document.head.appendChild(customStyles);
 
@@ -234,7 +254,6 @@ chatInput.addEventListener('keydown', (e) => {
         if (pesan === "*#hapus#*") { chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
 
         let tipePesan = 'chat'; let teksFinal = pesan;
-        // Penambahan parser fitur baru:
         if (pesan.startsWith("/alert ")) { tipePesan = 'alert'; teksFinal = pesan.replace("/alert ", ""); }
         else if (pesan.startsWith("/bom ")) { tipePesan = 'bom'; teksFinal = pesan.replace("/bom ", ""); }
         else if (pesan.startsWith("/img ")) { tipePesan = 'image'; teksFinal = pesan.replace("/img ", ""); }
@@ -300,7 +319,6 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         if (pesanBaru && !isMe) pemicuGlobalAlertPopup(teksAsli); return; 
     }
 
-    // Menangani semua tipe pesan reguler (chat, bom, image, WHISPER)
     if (data.tipe === 'chat' || data.tipe === 'bom' || data.tipe === 'image' || data.tipe === 'whisper') {
         const liArsip = document.createElement('li');
         liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
