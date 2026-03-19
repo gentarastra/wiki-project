@@ -205,8 +205,10 @@ function alihkanDatabase(mode) {
     jalankanLoading(() => {
         if (typeof chatListener !== 'undefined') activeChatRef.off('child_added', chatListener);
         
-        daftarArsipLengkap.innerHTML = "";
-        daftarReferensi.innerHTML = "";
+        // HANYA bersihkan Arsip Rahasia. 
+        // Referensi di halaman utama DIBIARKAN agar penyamaran tetap natural.
+        daftarArsipLengkap.innerHTML = ""; 
+        // daftarReferensi.innerHTML = ""; <--- BARIS INI YANG DIHAPUS
         
         if (mode === 'asli') {
             activeChatRef = chatRefReal;
