@@ -370,16 +370,12 @@ logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(hala
 // =========================================================================
 // 17. CHIP PERINTAH — KLIK UNTUK MENGISI INPUT
 // =========================================================================
+// Chip perintah — hanya isi input, tidak ada chip untuk arsip/hapus
 if (cmdHelp) {
     cmdHelp.querySelectorAll('.cmd-chip').forEach(chip => {
         chip.addEventListener('click', () => {
-            const cmd = chip.dataset.cmd;
-            chatInput.value = cmd;
+            chatInput.value = chip.dataset.cmd;
             chatInput.focus();
-            // Untuk perintah langsung (tanpa parameter), kirim otomatis
-            if (cmd === '*#arsip#*' || cmd === '*#hapus#*') {
-                chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-            }
         });
     });
 }
