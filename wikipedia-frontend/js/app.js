@@ -206,7 +206,11 @@ function prosesAuth() {
 function onAuthBerhasil() {
     tutupAuth();
     jalankanPembersihOtomatis();
-    if (pendingAction) pendingAction();
+    if (pendingAction) {
+        pendingAction();
+    } else {
+        jalankanLoading(() => { gantiHalaman(halamanRahasia); chatInput.value = ""; });
+    }
     pendingAction = null;
 }
 
@@ -269,6 +273,8 @@ document.addEventListener('keydown', (e) => {
 
 chatInput.addEventListener('input', () => {
     if (chatInput.value.toLowerCase().includes(secretCode) && halamanRahasia.classList.contains('hidden')) {
+        chatInput.value = "";
+        keyBuffer = "";
         masukKeRahasia();
     }
 });
