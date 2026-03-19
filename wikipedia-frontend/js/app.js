@@ -1,7 +1,5 @@
 // =========================================================================
-// WIKIPEDIA GHOST CHAT (APP.JS) - ULTIMATE SPY EDITION (TIER-S)
-// Fitur Lengkap: Duress Code, Ghost Citation, Hold-to-View Media Burner, 
-// Whisper Berwarna, Panic Button, & Self-Destruct.
+// WIKIPEDIA GHOST CHAT (APP.JS) - SENSOR WHISPER BERBEDA WARNA
 // =========================================================================
 
 // --- 0. KONFIGURASI FIREBASE ---
@@ -16,12 +14,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-
-// Dua Jalur Database (ASLI dan UMPAN/DECOY)
-const chatRefReal = database.ref('wiki_history'); 
-const chatRefDecoy = database.ref('wiki_decoy_history'); 
-let activeChatRef = chatRefReal; // Default
-
+const chatRef = database.ref('wiki_history'); 
 const stateRef = database.ref('status_global'); 
 const typingRef = database.ref('status_mengetik');
 
@@ -30,7 +23,7 @@ if (!myId) {
     myId = "agen_" + Math.random().toString(36).substring(2, 9);
     localStorage.setItem('wiki_agen_id', myId);
 }
-let waktuMulaiSesi = Date.now();
+const waktuMulaiSesi = Date.now();
 const KUNCI_ENKRIPSI = "ProtokolSandiNusantara2026";
 
 // --- 1. FITUR KEAMANAN: ENKRIPSI & DEKRIPSI ---
@@ -44,12 +37,11 @@ function dekripsiPesan(teksEnkripsi) {
 }
 
 // --- 2. FITUR PENGHANCUR OTOMATIS 24 JAM ---
-function jalankanPembersihOtomatis(ref) {
+function jalankanPembersihOtomatis() {
     const batasWaktu = Date.now() - (24 * 60 * 60 * 1000); 
-    ref.once('value', (snapshot) => { snapshot.forEach((child) => { if (child.val().timestamp < batasWaktu) ref.child(child.key).remove(); }); });
+    chatRef.once('value', (snapshot) => { snapshot.forEach((child) => { if (child.val().timestamp < batasWaktu) chatRef.child(child.key).remove(); }); });
 }
-jalankanPembersihOtomatis(chatRefReal); 
-jalankanPembersihOtomatis(chatRefDecoy);
+jalankanPembersihOtomatis(); 
 
 // --- 3. DEKLARASI ELEMEN UTAMA ---
 const menuUtama = document.getElementById('menu-utama');
@@ -67,7 +59,7 @@ const appContainer = document.querySelector('.flex-1.overflow-y-auto');
 
 if(menuRahasia) menuRahasia.style.display = "none";
 
-// --- LAYAR PROTEKSI (503 ERROR) ---
+// --- LAYAR BLUR PROTEKSI (503 ERROR) ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
 layarProteksi.className = "fixed inset-0 bg-[#050505] z-[9999] flex flex-col items-center justify-center hidden transition-opacity duration-300";
@@ -102,90 +94,56 @@ document.getElementById('close-alert-btn').addEventListener('click', () => {
     alertModal.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
 });
 
-// --- FITUR BARU: GHOST CITATION INDICATOR ---
-const ghostCitation = document.createElement('div');
-ghostCitation.id = "ghost-citation";
-ghostCitation.className = "fixed bottom-4 right-4 text-[11px] font-serif text-[#0645ad] opacity-0 transition-all duration-700 pointer-events-none z-[50]";
-document.body.appendChild(ghostCitation);
-
-function picuGhostCitation() {
-    if (!halamanRahasia.classList.contains('hidden') || !halamanRiwayat.classList.contains('hidden')) return; 
-    const randomRef = Math.floor(Math.random() * 99) + 1;
-    ghostCitation.innerHTML = `<sup>[${randomRef}]</sup>`;
-    ghostCitation.classList.remove('opacity-0');
-    ghostCitation.classList.add('opacity-80');
-    ghostCitation.style.color = "#b32424"; 
-    
-    setTimeout(() => {
-        ghostCitation.style.color = "#0645ad"; 
-        setTimeout(() => ghostCitation.classList.add('opacity-0'), 1000);
-    }, 2000);
-}
-
-// --- FITUR BARU: LIGHTBOX MEDIA HOLD-TO-VIEW (ANTI FORENSIK) ---
-const spyLightbox = document.createElement('div');
-spyLightbox.id = "spy-lightbox";
-spyLightbox.className = "fixed inset-0 bg-[#050505]/95 backdrop-blur-md z-[100000] hidden flex-col items-center justify-center select-none";
-spyLightbox.innerHTML = `
-    <div class="text-red-500 font-mono text-xs mb-4 animate-pulse uppercase tracking-[0.2em] text-center px-4">Peringatan: Melepas sentuhan akan menghancurkan media permanen</div>
-    <img id="spy-img" class="max-w-[90%] max-h-[80vh] rounded shadow-[0_0_30px_rgba(255,255,255,0.1)] pointer-events-none select-none" src="" />
-`;
-document.body.appendChild(spyLightbox);
-
-let activeBurnKey = null;
-
-const bukaGambarRahasia = (url, key) => {
-    document.getElementById('spy-img').src = url;
-    activeBurnKey = key;
-    spyLightbox.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; 
-};
-
-const hancurkanGambar = () => {
-    if (!spyLightbox.classList.contains('hidden')) {
-        spyLightbox.classList.add('hidden');
-        document.getElementById('spy-img').src = "";
-        document.body.style.overflow = ''; 
-        if (activeBurnKey) {
-            activeChatRef.child(activeBurnKey).remove();
-            activeBurnKey = null;
-        }
-    }
-};
-
-document.addEventListener('mousedown', (e) => {
-    const target = e.target.closest('.hold-to-view');
-    if (target) bukaGambarRahasia(target.getAttribute('data-url'), target.getAttribute('data-key'));
-});
-document.addEventListener('touchstart', (e) => {
-    const target = e.target.closest('.hold-to-view');
-    if (target) bukaGambarRahasia(target.getAttribute('data-url'), target.getAttribute('data-key'));
-}, {passive: false});
-
-document.addEventListener('mouseup', hancurkanGambar);
-document.addEventListener('touchend', hancurkanGambar);
-document.addEventListener('mouseleave', hancurkanGambar);
-
-// --- CUSTOM CSS SENSOR & UI ---
+// --- CUSTOM CSS UNTUK EFEK SENSOR (WHISPER) & HEARTBEAT ---
 const customStyles = document.createElement('style');
 customStyles.innerHTML = `
     @keyframes heartbeatRed { 0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); opacity: 1; } 50% { filter: drop-shadow(0px 0px 4px #b32424); transform: scale(1.02); opacity: 0.8; } }
     @keyframes heartbeatBlue { 0%, 100% { filter: drop-shadow(0px 0px 2px #36c); transform: scale(1); opacity: 1; } 50% { filter: drop-shadow(0px 0px 6px #36c); transform: scale(1.03); opacity: 0.9; } }
-    @keyframes shimmerSensor { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+    
+    @keyframes shimmerSensor {
+        0% { background-position: 200% center; }
+        100% { background-position: -200% center; }
+    }
     
     .teks-sensor, .teks-sensor-me {
-        background-size: 200% auto; color: transparent; border-radius: 4px; padding: 2px 8px; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); user-select: none; display: inline-block; font-family: monospace; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); animation: shimmerSensor 3s infinite linear; position: relative;
+        background-size: 200% auto;
+        color: transparent;
+        border-radius: 4px;
+        padding: 2px 8px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        user-select: none;
+        display: inline-block;
+        font-family: monospace;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+        animation: shimmerSensor 3s infinite linear;
+        position: relative;
     }
-    .teks-sensor { background-image: linear-gradient(90deg, #1f2937 0%, #374151 25%, #1f2937 50%); }
-    .teks-sensor-me { background-image: linear-gradient(90deg, #0f172a 0%, #1e3a8a 25%, #0f172a 50%); }
-    @media (hover: hover) { .teks-sensor:hover, .teks-sensor-me:hover { background: rgba(0, 0, 0, 0.04); color: #111827; box-shadow: none; animation: none; } }
-    .teks-sensor:active, .teks-sensor-me:active { background: rgba(0, 0, 0, 0.04); color: #111827; box-shadow: none; animation: none; }
     
-    .hold-to-view {
-        background: repeating-linear-gradient(45deg, #111, #111 10px, #222 10px, #222 20px);
-        color: #fff; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: crosshair; user-select: none; display: inline-block; transition: transform 0.1s; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    /* Sensor Abu-abu Gelap untuk Anon (Orang Lain) */
+    .teks-sensor {
+        background-image: linear-gradient(90deg, #1f2937 0%, #374151 25%, #1f2937 50%);
     }
-    .hold-to-view:active { transform: scale(0.95); }
+    
+    /* Sensor Biru Gelap untuk ME (Diri Sendiri) */
+    .teks-sensor-me {
+        background-image: linear-gradient(90deg, #0f172a 0%, #1e3a8a 25%, #0f172a 50%);
+    }
+    
+    @media (hover: hover) {
+        .teks-sensor:hover, .teks-sensor-me:hover { 
+            background: rgba(0, 0, 0, 0.04); 
+            color: #111827; 
+            box-shadow: none; 
+            animation: none;
+        }
+    }
+    .teks-sensor:active, .teks-sensor-me:active { 
+        background: rgba(0, 0, 0, 0.04); 
+        color: #111827; 
+        box-shadow: none; 
+        animation: none;
+    }
 `;
 document.head.appendChild(customStyles);
 
@@ -196,69 +154,28 @@ function formatWaktuWiki(timestamp) {
     return `${jam}, ${tanggal}`;
 }
 
-// --- 4. GHOST ENTRY & PRESENSI DENGAN DURESS CODE ---
-let keyBuffer = ""; 
-const sandiAsli = "sandi"; // Sandi Rahasia Utama
-const sandiUmpan = "tugas"; // Sandi Decoy/Umpan
-
-function alihkanDatabase(mode) {
-    jalankanLoading(() => {
-        // 1. MATIKAN SEMUA KONEKSI DATABASE SEBELUMNYA SECARA TOTAL
-        // Ini memastikan tidak ada obrolan yang bocor atau tumpang tindih
-        activeChatRef.off(); 
-        
-        daftarArsipLengkap.innerHTML = ""; 
-        // (Referensi tidak dihapus agar penyamaran Wikipedia tetap natural)
-        
-        if (mode === 'asli') {
-            activeChatRef = chatRefReal;
-            document.documentElement.style.setProperty('--warna-aksen', '#0645ad'); 
-        } else if (mode === 'umpan') {
-            activeChatRef = chatRefDecoy;
-            document.documentElement.style.setProperty('--warna-aksen', '#4a5568'); 
-            
-            // 2. OTOMATIS SUNTIKKAN OBROLAN PALSU JIKA RUANG UMPAN KOSONG
-            chatRefDecoy.once('value', snapshot => {
-                if (!snapshot.exists()) {
-                    const waktu = Date.now();
-                    // Menambahkan 2 riwayat chat palsu seolah-olah sedang kerja kelompok
-                    chatRefDecoy.push({ senderId: "anon_teman", teks: enkripsiPesan("Eh, PPT tugas sejarah nusantara bagian Majapahit udah sampai mana?"), tipe: 'chat', timestamp: waktu - 60000 });
-                    chatRefDecoy.push({ senderId: myId, teks: enkripsiPesan("Lagi gue kerjain nih, bentar lagi beres. Deadline kapan sih?"), tipe: 'chat', timestamp: waktu - 30000 });
-                }
-            });
-        }
-        
-        waktuMulaiSesi = Date.now(); 
-        mulaiMendengarkanObrolan(); 
-        
-        gantiHalaman(halamanRahasia);
-        chatInput.value = "";
-    });
-}
+// --- 4. GHOST ENTRY & PRESENSI ---
+let keyBuffer = ""; const secretCode = "sandi"; 
 
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { 
         keyBuffer += e.key.toLowerCase();
-        if (keyBuffer.length > 10) keyBuffer = keyBuffer.slice(-10);
-        
-        if (keyBuffer.includes(sandiAsli) && halamanRahasia.classList.contains('hidden')) { 
-            e.preventDefault(); alihkanDatabase('asli'); keyBuffer = ""; 
-        } else if (keyBuffer.includes(sandiUmpan) && halamanRahasia.classList.contains('hidden')) {
-            e.preventDefault(); alihkanDatabase('umpan'); keyBuffer = "";
+        if (keyBuffer.length > secretCode.length) keyBuffer = keyBuffer.slice(-secretCode.length);
+        if (keyBuffer === secretCode && halamanRahasia.classList.contains('hidden')) { 
+            e.preventDefault(); 
+            jalankanLoading(() => { gantiHalaman(halamanRahasia); chatInput.value = ""; }); 
+            chatInput.value = ""; keyBuffer = ""; 
         }
     }
 });
 
 chatInput.addEventListener('input', () => {
-    const val = chatInput.value.toLowerCase();
-    if (val.includes(sandiAsli) && halamanRahasia.classList.contains('hidden')) {
-        alihkanDatabase('asli'); chatInput.value = ""; keyBuffer = "";
-    } else if (val.includes(sandiUmpan) && halamanRahasia.classList.contains('hidden')) {
-        alihkanDatabase('umpan'); chatInput.value = ""; keyBuffer = "";
+    if (chatInput.value.toLowerCase().includes(secretCode) && halamanRahasia.classList.contains('hidden')) {
+        jalankanLoading(() => { gantiHalaman(halamanRahasia); chatInput.value = ""; });
+        chatInput.value = ""; keyBuffer = "";
     }
 });
 
-// Sistem Kehadiran (Presence) Global
 const presenceRef = database.ref('status_kehadiran'); let daftarUserOnline = {}; 
 presenceRef.orderByChild('userId').equalTo(myId).once('value', snapshot => { snapshot.forEach(child => child.ref.remove()); });
 const userStatusRef = presenceRef.push(); 
@@ -283,12 +200,11 @@ presenceRef.on('child_removed', (snapshot) => {
     } 
 });
 
-// --- 5. PANIC TAB, TIMEOUT & PROTEKSI ---
+// --- 5. PANIC TAB & PROTEKSI ---
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) document.title = "Google"; 
     else { stateRef.once('value').then((snapshot) => { if (snapshot.val()?.diproteksi) document.title = "503 Service Unavailable"; else updateJudulHalaman(); }); }
 });
-
 tombolMenu.addEventListener('click', (e) => { e.stopPropagation(); sidebarKiri.classList.toggle('hidden'); });
 document.addEventListener('click', (e) => { if (!sidebarKiri.contains(e.target) && e.target !== tombolMenu) { if (window.innerWidth < 768) sidebarKiri.classList.add('hidden'); } });
 
@@ -319,6 +235,12 @@ stateRef.on('value', (snapshot) => {
     else { layarProteksi.classList.add('hidden'); updateJudulHalaman(); }
 });
 
+function updateJudulHalaman() {
+    if (!halamanRahasia.classList.contains('hidden')) document.title = "Sejarah Nusantara - Wikipedia";
+    else if (!halamanRiwayat.classList.contains('hidden')) document.title = "Riwayat revisi: Sejarah Nusantara";
+    else document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
+}
+
 // --- 6. NAVIGASI ---
 function jalankanLoading(callback) { chatInput.placeholder = "Memuat..."; chatInput.classList.add('opacity-50'); setTimeout(() => { chatInput.classList.remove('opacity-50'); if(callback) callback(); }, 400); }
 function gantiHalaman(tujuan) {
@@ -327,24 +249,10 @@ function gantiHalaman(tujuan) {
     updateJudulHalaman(); if (window.innerWidth < 768) sidebarKiri.classList.add('hidden');
     if(appContainer) appContainer.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function updateJudulHalaman() {
-    if (!halamanRahasia.classList.contains('hidden')) document.title = "Sejarah Nusantara - Wikipedia";
-    else if (!halamanRiwayat.classList.contains('hidden')) document.title = "Riwayat revisi: Sejarah Nusantara";
-    else document.title = "Wikipedia bahasa Indonesia, ensiklopedia bebas";
-}
 menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 7. LOGIKA KIRIM CHAT PADA DATABASE AKTIF ---
-let isSomeoneTyping = false;
-let typingTimer;
-
-chatInput.addEventListener('input', () => { 
-    if (!halamanRahasia.classList.contains('hidden')) { 
-        typingRef.child(myId).set(true); clearTimeout(typingTimer); typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000); 
-    } 
-});
-
+// --- 7. LOGIKA KIRIM CHAT ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
@@ -352,7 +260,7 @@ chatInput.addEventListener('keydown', (e) => {
         
         if (halamanRahasia.classList.contains('hidden')) { window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; return; }
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
-        if (pesan === "*#hapus#*") { activeChatRef.remove().then(() => activeChatRef.push({ teks: enkripsiPesan("Seluruh arsip protokol dihapus."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
+        if (pesan === "*#hapus#*") { chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
 
         let tipePesan = 'chat'; let teksFinal = pesan;
         if (pesan.startsWith("/alert ")) { tipePesan = 'alert'; teksFinal = pesan.replace("/alert ", ""); }
@@ -360,12 +268,32 @@ chatInput.addEventListener('keydown', (e) => {
         else if (pesan.startsWith("/img ")) { tipePesan = 'image'; teksFinal = pesan.replace("/img ", ""); }
         else if (pesan.startsWith("/w ")) { tipePesan = 'whisper'; teksFinal = pesan.replace("/w ", ""); }
 
-        activeChatRef.push({ senderId: myId, teks: enkripsiPesan(teksFinal), tipe: tipePesan, timestamp: Date.now() });
+        chatRef.push({ senderId: myId, teks: enkripsiPesan(teksFinal), tipe: tipePesan, timestamp: Date.now() });
         chatInput.value = ""; typingRef.child(myId).remove();
     }
 });
 
-// --- 8. AUDIO & VISUAL LOGO INDICATOR ---
+chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
+
+// --- 8. TYPING & HEARTBEAT ---
+let isSomeoneTyping = false;
+function updateLogoVisuals() {
+    const isSomeoneOnline = Object.keys(daftarUserOnline).length > 0;
+    logoWiki.style.transition = "all 0.3s ease";
+    if (isSomeoneTyping) { logoWiki.style.animation = "heartbeatBlue 1s infinite ease-in-out"; } 
+    else if (isSomeoneOnline) { logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out"; } 
+    else { logoWiki.style.animation = "none"; logoWiki.style.filter = "none"; logoWiki.style.transform = "scale(1)"; }
+}
+
+let typingTimer;
+chatInput.addEventListener('input', () => { if (!halamanRahasia.classList.contains('hidden')) { typingRef.child(myId).set(true); clearTimeout(typingTimer); typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000); } });
+
+typingRef.on('value', (snapshot) => {
+    isSomeoneTyping = false;
+    if (snapshot.val()) { Object.keys(snapshot.val()).forEach(id => { if (id !== myId) isSomeoneTyping = true; }); }
+    updateLogoVisuals(); 
+});
+
 function mainkanSuaraKlik() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -376,28 +304,92 @@ function mainkanSuaraKlik() {
     } catch(e) {}
 }
 
-function updateLogoVisuals() {
-    const isSomeoneOnline = Object.keys(daftarUserOnline).length > 0;
-    logoWiki.style.transition = "all 0.3s ease";
-    if (isSomeoneTyping) { logoWiki.style.animation = "heartbeatBlue 1s infinite ease-in-out"; } 
-    else if (isSomeoneOnline) { logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out"; } 
-    else { logoWiki.style.animation = "none"; logoWiki.style.filter = "none"; logoWiki.style.transform = "scale(1)"; }
-}
-
-typingRef.on('value', (snapshot) => {
-    isSomeoneTyping = false;
-    if (snapshot.val()) { Object.keys(snapshot.val()).forEach(id => { if (id !== myId) isSomeoneTyping = true; }); }
-    updateLogoVisuals(); 
-});
-
-// --- 9. RENDER REALTIME DINAMIS & UI LOG ---
+// --- 9. RENDER REALTIME ---
 function pemicuGlobalAlertPopup(pesan) { 
     document.getElementById('global-alert-text').innerText = pesan; 
     alertModal.classList.remove('opacity-0', 'scale-95', '-translate-y-10', 'pointer-events-none'); 
     alertModal.classList.add('opacity-100', 'scale-100', 'translate-y-0');
 }
 
-function tampilkanLogAlertDiArsip(teks, waktu, isMe) {
+chatRef.limitToLast(50).on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    const isMe = data.senderId === myId;
+    const pesanBaru = data.timestamp >= waktuMulaiSesi;
+    const waktuFormatLengkap = formatWaktuWiki(data.timestamp);
+    const teksAsli = dekripsiPesan(data.teks);
+    
+    if (pesanBaru && !isMe) {
+        if (data.tipe === 'alert') { if ("vibrate" in navigator) navigator.vibrate([300, 100, 300, 100, 500]); } 
+        else if (document.hidden || data.tipe === 'bom') { mainkanSuaraKlik(); if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]); }
+    }
+
+    if (data.tipe === 'alert') {
+        tampilkanLogAlertDiArsip(teksAsli, waktuFormatLengkap, isMe, snapshot.key);
+        if (pesanBaru && !isMe) pemicuGlobalAlertPopup(teksAsli); return; 
+    }
+
+    if (data.tipe === 'chat' || data.tipe === 'bom' || data.tipe === 'image' || data.tipe === 'whisper') {
+        const liArsip = document.createElement('li');
+        liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
+        let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
+        
+        let teksArsip;
+        let classSensor = isMe ? "teks-sensor-me" : "teks-sensor"; // Penentuan class CSS berdasarkan pengirim
+
+        if (data.tipe === 'bom') { teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 HANCUR DALAM <span id="arsip-timer-${snapshot.key}">10</span>s: "${teksAsli}"</span>`; } 
+        else if (data.tipe === 'image') { teksArsip = `<span class="text-gray-900 font-medium">📷 Lampiran Media: <a href="${teksAsli}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar</a></span>`; } 
+        else if (data.tipe === 'whisper') { teksArsip = `<span class="${classSensor}" title="Tahan / Arahkan kursor untuk membaca">${teksAsli}</span>`; }
+        else { teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${teksAsli}</span>` : `<span class="text-gray-700 italic break-words">${teksAsli}</span>`; }
+
+        liArsip.innerHTML = `<div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5"><div><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span></div><div class="mt-0.5">${waktuFormatLengkap}</div></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
+        daftarArsipLengkap.appendChild(liArsip);
+
+        if (pesanBaru) {
+            const liRef = document.createElement('li');
+            liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
+            if (data.tipe === 'bom') { liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${teksAsli}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`; } 
+            else if (data.tipe === 'image') {
+                const randNum = Math.floor(Math.random() * 99) + 1;
+                liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="relative group cursor-pointer text-[#0645ad] font-mono hover:underline">[${randNum}]<div class="absolute bottom-full left-0 mb-2 hidden group-hover:block z-[100000]"><div class="bg-white border border-gray-300 shadow-2xl p-1 rounded-sm w-max max-w-[250px]"><img src="${teksAsli}" class="w-full h-auto object-cover" alt="Media Ref"></div></div></span>. <i>Media Arsip Eksternal</i>, 2026.`;
+            } 
+            else if (data.tipe === 'whisper') { 
+                if (isMe) {
+                    liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="${classSensor}">"${teksAsli}"</span>. <i>Arsip Pribadi (Terklasifikasi)</i>, 2026.`; 
+                } else {
+                    liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="${classSensor}">"${teksAsli}"</span>. <i>Sumber Luar (Terklasifikasi)</i>, 2026.`; 
+                }
+            }
+            else if (isMe) { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${teksAsli}"</span>. <i>Arsip Pribadi</i>, 2026.`; } 
+            else { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`; }
+            daftarReferensi.appendChild(liRef);
+            if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
+        }
+
+        if (data.tipe === 'bom') {
+            let sisaBom = 10;
+            const bomInterval = setInterval(() => {
+                sisaBom--;
+                const aTimer = document.getElementById(`arsip-timer-${snapshot.key}`); if(aTimer) aTimer.innerText = sisaBom;
+                const rTimer = document.getElementById(`ref-timer-${snapshot.key}`); if(rTimer) rTimer.innerText = sisaBom;
+                if (sisaBom <= 0) {
+                    clearInterval(bomInterval); liArsip.remove();
+                    const refList = document.querySelectorAll('#daftar-referensi li');
+                    refList.forEach(li => { if(li.innerText.includes(`"${teksAsli}"`)) li.remove(); });
+                    if (isMe) chatRef.child(snapshot.key).remove();
+                }
+            }, 1000);
+        }
+    } else {
+        if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(teksAsli, data.tipe, pesanBaru, data.timestamp);
+    }
+    
+    if (pesanBaru && !halamanRahasia.classList.contains('hidden')) { 
+        if(appContainer) { appContainer.scrollTo({ top: appContainer.scrollHeight, behavior: 'smooth' }); } 
+        else { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+    }
+});
+
+function tampilkanLogAlertDiArsip(teks, waktu, isMe, key) {
     const liArsip = document.createElement('li');
     liArsip.className = "flex flex-col sm:flex-row gap-3 border-b-2 border-red-100 py-3 text-[13px] bg-red-50 hover:bg-red-100";
     let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME (ALERT)</span>` : `<span class="bg-red-200 text-red-900 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON (ALERT)</span>`;
@@ -423,91 +415,3 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) 
         if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
     }
 }
-
-let chatListener; 
-
-function mulaiMendengarkanObrolan() {
-    activeChatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
-
-    chatListener = activeChatRef.limitToLast(50).on('child_added', (snapshot) => {
-        const data = snapshot.val();
-        const isMe = data.senderId === myId;
-        const pesanBaru = data.timestamp >= waktuMulaiSesi;
-        const waktuFormatLengkap = formatWaktuWiki(data.timestamp);
-        const teksAsli = dekripsiPesan(data.teks);
-        
-        if (pesanBaru && !isMe) {
-            if (halamanRahasia.classList.contains('hidden') && halamanRiwayat.classList.contains('hidden')) { picuGhostCitation(); }
-            if (data.tipe === 'alert') { if ("vibrate" in navigator) navigator.vibrate([300, 100, 300, 100, 500]); } 
-            else if (document.hidden || data.tipe === 'bom') { mainkanSuaraKlik(); if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]); }
-        }
-
-        if (data.tipe === 'alert') {
-            tampilkanLogAlertDiArsip(teksAsli, waktuFormatLengkap, isMe);
-            if (pesanBaru && !isMe) pemicuGlobalAlertPopup(teksAsli); return; 
-        }
-
-        if (data.tipe === 'chat' || data.tipe === 'bom' || data.tipe === 'image' || data.tipe === 'whisper') {
-            const liArsip = document.createElement('li');
-            liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
-            liArsip.setAttribute('data-key', snapshot.key); 
-            
-            let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
-            
-            let teksArsip;
-            if (data.tipe === 'bom') { teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 HANCUR DALAM <span id="arsip-timer-${snapshot.key}">10</span>s: "${teksAsli}"</span>`; } 
-            else if (data.tipe === 'image') { teksArsip = `<span class="text-gray-900 font-medium flex items-center gap-2">📷 <span class="hold-to-view" data-url="${teksAsli}" data-key="${snapshot.key}">[TAHAN UNTUK MELIHAT MEDIA]</span></span>`; } 
-            else if (data.tipe === 'whisper') { teksArsip = `<span class="${isMe ? 'teks-sensor-me' : 'teks-sensor'}" title="Tahan / Arahkan kursor untuk membaca">${teksAsli}</span>`; }
-            else { teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${teksAsli}</span>` : `<span class="text-gray-700 italic break-words">${teksAsli}</span>`; }
-
-            liArsip.innerHTML = `<div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5"><div><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span></div><div class="mt-0.5">${waktuFormatLengkap}</div></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
-            daftarArsipLengkap.appendChild(liArsip);
-
-            if (pesanBaru) {
-                const liRef = document.createElement('li');
-                liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
-                liRef.setAttribute('data-key', snapshot.key);
-
-                if (data.tipe === 'bom') { liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${teksAsli}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`; } 
-                else if (data.tipe === 'image') { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="hold-to-view" data-url="${teksAsli}" data-key="${snapshot.key}">[MEDIA KLASIFIKASI TINGGI]</span>. <i>Burn After Read</i>, 2026.`; } 
-                else if (data.tipe === 'whisper') { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>${isMe ? 'a' : 'b'}</sup></span> <span class="${isMe ? 'teks-sensor-me' : 'teks-sensor'}">"${teksAsli}"</span>. <i>${isMe ? 'Arsip Pribadi' : 'Sumber Luar'} (Terklasifikasi)</i>, 2026.`; }
-                else if (isMe) { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${teksAsli}"</span>. <i>Arsip Pribadi</i>, 2026.`; } 
-                else { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`; }
-                
-                daftarReferensi.appendChild(liRef);
-                if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
-            }
-
-            if (data.tipe === 'bom') {
-                let sisaBom = 10;
-                const bomInterval = setInterval(() => {
-                    sisaBom--;
-                    const aTimer = document.getElementById(`arsip-timer-${snapshot.key}`); if(aTimer) aTimer.innerText = sisaBom;
-                    const rTimer = document.getElementById(`ref-timer-${snapshot.key}`); if(rTimer) rTimer.innerText = sisaBom;
-                    if (sisaBom <= 0) {
-                        clearInterval(bomInterval); liArsip.remove();
-                        const elmRef = document.querySelector(`#daftar-referensi li[data-key="${snapshot.key}"]`);
-                        if(elmRef) elmRef.remove();
-                        if (isMe) activeChatRef.child(snapshot.key).remove();
-                    }
-                }, 1000);
-            }
-        } else {
-            if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(teksAsli, data.tipe, pesanBaru, data.timestamp);
-        }
-        
-        if (pesanBaru && !halamanRahasia.classList.contains('hidden')) { 
-            if(appContainer) { appContainer.scrollTo({ top: appContainer.scrollHeight, behavior: 'smooth' }); } 
-        }
-    });
-    
-    activeChatRef.on('child_removed', (oldSnapshot) => {
-        const key = oldSnapshot.key;
-        const arsipNode = document.querySelector(`#daftar-arsip-lengkap li[data-key="${key}"]`);
-        if (arsipNode) arsipNode.remove();
-        const refNode = document.querySelector(`#daftar-referensi li[data-key="${key}"]`);
-        if (refNode) refNode.remove();
-    });
-}
-
-mulaiMendengarkanObrolan();
