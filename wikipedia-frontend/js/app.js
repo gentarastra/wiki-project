@@ -235,12 +235,18 @@ chatInput.addEventListener('keydown', (e) => {
 });
 chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
 
-// --- 8. TYPING & HEARTBEAT (MERAH STANDBY, BIRU TYPING) ---
+// --- 8. TYPING & HEARTBEAT (MERAH PELAN, BIRU CEPAT) ---
 const styleHeartbeat = document.createElement('style');
 styleHeartbeat.innerHTML = `
+    /* Detak Jantung Standby (Merah - Pelan) */
     @keyframes heartbeatRed {
-        0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); }
-        50% { filter: drop-shadow(0px 0px 5px #b32424); transform: scale(1.03); }
+        0%, 100% { filter: drop-shadow(0px 0px 2px #b32424); transform: scale(1); opacity: 1; }
+        50% { filter: drop-shadow(0px 0px 6px #b32424); transform: scale(1.02); opacity: 0.8; }
+    }
+    /* Detak Jantung Typing (Biru - Cepat/Enerjik) */
+    @keyframes heartbeatBlue {
+        0%, 100% { filter: drop-shadow(0px 0px 3px #36c); transform: scale(1); opacity: 1; }
+        50% { filter: drop-shadow(0px 0px 10px #36c); transform: scale(1.05); opacity: 0.7; }
     }
 `;
 document.head.appendChild(styleHeartbeat);
@@ -251,12 +257,13 @@ function updateLogoVisuals() {
     logoWiki.style.transition = "all 0.3s ease";
     
     if (isSomeoneTyping) {
-        logoWiki.style.animation = "none";
-        logoWiki.style.filter = "drop-shadow(0px 0px 6px #36c)";
-        logoWiki.style.transform = "scale(1)";
+        // MODE 2: Mengetik (Biru Berkedip Cepat - 0.8 detik)
+        logoWiki.style.animation = "heartbeatBlue 0.8s infinite ease-in-out";
     } else if (isSomeoneOnline) {
+        // MODE 1: Online / Standby (Merah Berdenyut Pelan - 2.5 detik)
         logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out";
     } else {
+        // MODE 0: Offline (Normal)
         logoWiki.style.animation = "none";
         logoWiki.style.filter = "none";
         logoWiki.style.transform = "scale(1)";
