@@ -106,7 +106,7 @@ function formatWaktuWiki(timestamp) {
 }
 
 // --- 4. GHOST ENTRY & PRESENSI ---
-let keyBuffer = ""; const secretCode = "01012025"; 
+let keyBuffer = ""; const secretCode = "sandi"; 
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { 
         keyBuffer += e.key.toLowerCase();
@@ -121,8 +121,26 @@ database.ref('.info/connected').on('value', (snapshot) => {
     userStatusRef.onDisconnect().remove().then(() => userStatusRef.set({ status: 'online', userId: myId }));
     typingRef.child(myId).onDisconnect().remove(); 
 });
-presenceRef.on('child_added', (snapshot) => { const data = snapshot.val(); if (data && data.userId !== myId) { if (!daftarUserOnline[data.userId]) { daftarUserOnline[data.userId] = true; tampilkanNotifikasiSistem("Seorang kontributor bergabung.", "join", true, Date.now()); } } });
-presenceRef.on('child_removed', (snapshot) => { const data = snapshot.val(); if (data && data.userId !== myId) { if (daftarUserOnline[data.userId]) { delete daftarUserOnline[data.userId]; tampilkanNotifikasiSistem("Seorang kontributor keluar.", "leave", true, Date.now()); } } });
+presenceRef.on('child_added', (snapshot) => { 
+    const data = snapshot.val(); 
+    if (data && data.userId !== myId) { 
+        if (!daftarUserOnline[data.userId]) { 
+            daftarUserOnline[data.userId] = true; 
+            tampilkanNotifikasiSistem("Seorang kontributor bergabung.", "join", true, Date.now()); 
+            updateLogoVisuals(); // Update visual logo
+        } 
+    } 
+});
+presenceRef.on('child_removed', (snapshot) => { 
+    const data = snapshot.val(); 
+    if (data && data.userId !== myId) { 
+        if (daftarUserOnline[data.userId]) { 
+            delete daftarUserOnline[data.userId]; 
+            tampilkanNotifikasiSistem("Seorang kontributor keluar.", "leave", true, Date.now()); 
+            updateLogoVisuals(); // Update visual logo
+        } 
+    } 
+});
 
 // --- 5. PANIC TAB & 5 KETUKAN HP ---
 document.addEventListener("visibilitychange", () => {
@@ -151,36 +169,25 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         stateRef.once('value').then((snapshot) => {
             const isProtected = snapshot.val()?.diproteksi || false;
-            if (!isProtected) {
-                // Jika belum maintenance, 1x Esc langsung mengunci
-                stateRef.set({ diproteksi: true });
-            } else {
-                // Jika sedang maintenance, butuh 3x Esc cepat (dalam 1.5 detik) untuk membuka
+            if (!isProtected) { stateRef.set({ diproteksi: true }); } 
+            else {
                 escCount++; clearTimeout(escTimer);
-                if (escCount >= 3) {
-                    stateRef.set({ diproteksi: false });
-                    escCount = 0;
-                } else {
-                    escTimer = setTimeout(() => { escCount = 0; }, 1500);
-                }
+                if (escCount >= 3) { stateRef.set({ diproteksi: false }); escCount = 0; } 
+                else { escTimer = setTimeout(() => { escCount = 0; }, 1500); }
             }
         });
     }
-    // Tombol darurat ganti tab
     if (e.key === '`' || e.key === '~' || (e.altKey && e.key.toLowerCase() === 'z')) window.location.replace("https://classroom.google.com"); 
 });
 
-// LOGIKA SENTUHAN HP (Biarkan tetap sama, toggle seperti biasa)
+// LOGIKA SENTUHAN HP
 function pemicuDarurat() { stateRef.once('value').then((snapshot) => stateRef.set({ diproteksi: !(snapshot.val()?.diproteksi || false) })); }
 logoWiki.addEventListener('dblclick', pemicuDarurat);
-
 let tapCount = 0; let tapTimer;
 document.addEventListener('touchstart', (e) => {
     tapCount++; clearTimeout(tapTimer);
-    if (tapCount >= 5) { 
-        pemicuDarurat(); // Pakai toggle untuk HP
-        tapCount = 0;
-    } else { tapTimer = setTimeout(() => { tapCount = 0; }, 1000); } 
+    if (tapCount >= 5) { pemicuDarurat(); tapCount = 0; } 
+    else { tapTimer = setTimeout(() => { tapCount = 0; }, 1000); } 
 });
 
 // LISTENER LAYAR MAINTENANCE
@@ -227,18 +234,54 @@ chatInput.addEventListener('keydown', (e) => {
         chatInput.value = ""; typingRef.child(myId).remove();
     }
 });
-
 chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
 
-// --- 8. TYPING & AUDIO/HAPTIC ---
+// --- 8. TYPING & HEARTBEAT (MERAH STANDBY, BIRU TYPING) ---
+const styleHeartbeat = document.createElement('style');
+styleHeartbeat.innerHTML = `
+    @keyframes heartbeatRed {
+        0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); }
+        50% { filter: drop-shadow(0px 0px 5px #b32424); transform: scale(1.03); }
+    }
+`;
+document.head.appendChild(styleHeartbeat);
+
+let isSomeoneTyping = false;
+function updateLogoVisuals() {
+    const isSomeoneOnline = Object.keys(daftarUserOnline).length > 0;
+    logoWiki.style.transition = "all 0.3s ease";
+    
+    if (isSomeoneTyping) {
+        // MODE 2: Mengetik (Biru terang, tidak berdenyut)
+        logoWiki.style.animation = "none";
+        logoWiki.style.filter = "drop-shadow(0px 0px 6px #36c)";
+        logoWiki.style.transform = "scale(1)";
+    } else if (isSomeoneOnline) {
+        // MODE 1: Online / Standby (Merah berdenyut halus seperti detak jantung)
+        logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out";
+    } else {
+        // MODE 0: Offline (Normal / Tidak ada efek)
+        logoWiki.style.animation = "none";
+        logoWiki.style.filter = "none";
+        logoWiki.style.transform = "scale(1)";
+    }
+}
+
 let typingTimer;
 chatInput.addEventListener('input', () => {
-    if (!halamanRahasia.classList.contains('hidden')) { typingRef.child(myId).set(true); clearTimeout(typingTimer); typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000); }
+    if (!halamanRahasia.classList.contains('hidden')) { 
+        typingRef.child(myId).set(true); 
+        clearTimeout(typingTimer); 
+        typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000); 
+    }
 });
+
 typingRef.on('value', (snapshot) => {
-    let someoneIsTyping = false;
-    if (snapshot.val()) { Object.keys(snapshot.val()).forEach(id => { if (id !== myId) someoneIsTyping = true; }); }
-    logoWiki.style.filter = someoneIsTyping ? "drop-shadow(0px 0px 4px #36c)" : "none"; logoWiki.style.transition = "filter 0.3s ease";
+    isSomeoneTyping = false;
+    if (snapshot.val()) { 
+        Object.keys(snapshot.val()).forEach(id => { if (id !== myId) isSomeoneTyping = true; }); 
+    }
+    updateLogoVisuals(); // Update visual logo setiap ada perubahan status ngetik
 });
 
 function mainkanSuaraKlik() {
@@ -274,7 +317,6 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     }
 
     if (data.tipe === 'chat' || data.tipe === 'bom' || data.tipe === 'image') {
-        // RENDER DI HALAMAN ARSIP
         const liArsip = document.createElement('li');
         liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-3 text-[13px] hover:bg-blue-50 transition-colors";
         let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
@@ -292,14 +334,11 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             <div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
-        // RENDER DI HALAMAN RAHASIA (DAFTAR REFERENSI FOOTNOTES)
         if (pesanBaru) {
             const liRef = document.createElement('li');
             liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
-            
-            if (data.tipe === 'bom') {
-                liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${teksAsli}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`;
-            } else if (data.tipe === 'image') {
+            if (data.tipe === 'bom') { liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${teksAsli}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`; } 
+            else if (data.tipe === 'image') {
                 const randNum = Math.floor(Math.random() * 99) + 1;
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="relative group cursor-pointer text-[#0645ad] font-mono hover:underline">[${randNum}]
                     <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block z-[100000]">
@@ -308,11 +347,9 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
                         </div>
                     </div>
                 </span>. <i>Media Arsip Eksternal</i>, 2026.`;
-            } else if (isMe) {
-                liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${teksAsli}"</span>. <i>Arsip Pribadi</i>, 2026.`;
-            } else {
-                liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`;
-            }
+            } 
+            else if (isMe) { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${teksAsli}"</span>. <i>Arsip Pribadi</i>, 2026.`; } 
+            else { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`; }
             daftarReferensi.appendChild(liRef);
             if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
         }
@@ -335,7 +372,6 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     } else {
         if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(teksAsli, data.tipe, pesanBaru, data.timestamp);
     }
-
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
 });
 
@@ -345,13 +381,7 @@ function tampilkanLogAlertDiArsip(teks, waktu, isMe, key) {
     const liArsip = document.createElement('li');
     liArsip.className = "flex flex-col sm:flex-row gap-3 border-b-2 border-red-100 py-3 text-[13px] bg-red-50 hover:bg-red-100";
     let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME (ALERT)</span>` : `<span class="bg-red-200 text-red-900 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON (ALERT)</span>`;
-    
-    liArsip.innerHTML = `
-        <div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5">
-            <div><span class="text-[#0645ad] cursor-pointer">(skr | prb)</span></div>
-            <div class="mt-0.5">${waktu}</div>
-        </div>
-        <div class="flex-1 flex items-start gap-2">${badge} <span class="text-red-950 font-bold break-words">"${teks}"</span></div>`;
+    liArsip.innerHTML = `<div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5"><div><span class="text-[#0645ad] cursor-pointer">(skr | prb)</span></div><div class="mt-0.5">${waktu}</div></div><div class="flex-1 flex items-start gap-2">${badge} <span class="text-red-950 font-bold break-words">"${teks}"</span></div>`;
     daftarArsipLengkap.appendChild(liArsip);
 }
 
@@ -365,15 +395,7 @@ function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) 
     const liArsip = document.createElement('li');
     liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-2 text-[12px] bg-gray-50";
     let jamTayang = formatWaktuWiki(waktuTercatat || Date.now());
-
-    liArsip.innerHTML = `
-        <div class="flex flex-col min-w-[150px] text-gray-400 text-[11px] shrink-0 font-sans mt-0.5">
-            <div><span>(log sistem)</span></div>
-            <div class="mt-0.5">${jamTayang}</div>
-        </div>
-        <div class="flex-1 flex items-center gap-2 animate-fade-in" style="color: ${warnaHex};">
-            <span class="font-bold text-sm">${ikon}</span> <span class="italic">${pesanSistem}</span>
-        </div>`;
+    liArsip.innerHTML = `<div class="flex flex-col min-w-[150px] text-gray-400 text-[11px] shrink-0 font-sans mt-0.5"><div><span>(log sistem)</span></div><div class="mt-0.5">${jamTayang}</div></div><div class="flex-1 flex items-center gap-2 animate-fade-in" style="color: ${warnaHex};"><span class="font-bold text-sm">${ikon}</span> <span class="italic">${pesanSistem}</span></div>`;
     daftarArsipLengkap.appendChild(liArsip);
 
     if (pesanBaru) {
