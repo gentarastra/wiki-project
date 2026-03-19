@@ -1,5 +1,5 @@
 // =========================================================================
-// WIKIPEDIA GHOST CHAT (APP.JS)
+// WIKIPEDIA GHOST CHAT (APP.JS) - CLASSIC GHOST ENTRY
 // =========================================================================
 
 // --- 0. KONFIGURASI FIREBASE ---
@@ -102,7 +102,7 @@ alertModal.innerHTML = `
 document.body.appendChild(alertModal);
 document.getElementById('close-alert-btn').addEventListener('click', () => { alertModal.classList.add('-translate-y-full'); setTimeout(() => alertModal.classList.add('hidden'), 500); });
 
-// WAKTU ASLI (REALTIME) SEPERTI PERMINTAAN
+// WAKTU ASLI (REALTIME) SESUAI KODE ASLIMU
 function formatWaktuWiki(timestamp) {
     const dateObj = new Date(timestamp || Date.now());
     const tanggal = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -110,7 +110,31 @@ function formatWaktuWiki(timestamp) {
     return `${jam}, ${tanggal}`;
 }
 
-// --- 4. PRESENSI ONLINE ---
+// --- 4. GHOST ENTRY & PRESENSI (DIKEMBALIKAN KE KODE ASLI + SUPPORT HP) ---
+let keyBuffer = ""; const secretCode = "sandi"; 
+
+// Deteksi ketikan global (seperti kode aslimu)
+document.addEventListener('keydown', (e) => {
+    if (e.key.length === 1) { 
+        keyBuffer += e.key.toLowerCase();
+        if (keyBuffer.length > secretCode.length) keyBuffer = keyBuffer.slice(-secretCode.length);
+        if (keyBuffer === secretCode && halamanRahasia.classList.contains('hidden')) { 
+            jalankanLoading(() => gantiHalaman(halamanRahasia)); 
+            keyBuffer = ""; 
+            chatInput.value = ""; // Bersihkan teks sandi dari kolom
+        }
+    }
+});
+
+// Deteksi ketikan khusus HP (karena HP kadang tidak memicu event keydown dengan benar)
+chatInput.addEventListener('input', () => {
+    if (chatInput.value.toLowerCase().includes(secretCode) && halamanRahasia.classList.contains('hidden')) {
+        jalankanLoading(() => gantiHalaman(halamanRahasia));
+        chatInput.value = ""; // Bersihkan teks
+        keyBuffer = "";
+    }
+});
+
 const presenceRef = database.ref('status_kehadiran'); 
 let daftarUserOnline = {}; 
 
@@ -207,29 +231,24 @@ function gantiHalaman(tujuan) {
     halamanUtama.classList.add('hidden'); halamanRahasia.classList.add('hidden'); halamanRiwayat.classList.add('hidden'); tujuan.classList.remove('hidden');
     if (tujuan === halamanRahasia) { chatInput.placeholder = "Ketik rahasia..."; chatInput.focus(); } else { chatInput.placeholder = "Telusuri Wikipedia"; }
     updateJudulHalaman(); if (window.innerWidth < 768) sidebarKiri.classList.add('hidden');
-    if(appContainer) appContainer.scrollTo({ top: 0, behavior: 'smooth' }); // PENINGKATAN: Auto-scroll saat ganti halaman
+    if(appContainer) appContainer.scrollTo({ top: 0, behavior: 'smooth' });
 }
 menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 7. LOGIKA KIRIM CHAT & PASSWORD ---
+// --- 7. LOGIKA KIRIM CHAT (E2EE) ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
         if (pesan === "") return;
-
-        // LOGIKA PASSWORD HP: Jika di halaman pencarian
-        if (!halamanUtama.classList.contains('hidden')) { 
-            if (pesan.toLowerCase() === "sandi") {
-                jalankanLoading(() => gantiHalaman(halamanRahasia));
-                chatInput.value = "";
-            } else {
-                window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`;
-            }
+        
+        // Cek mode pencarian normal (Halaman Utama)
+        if (halamanRahasia.classList.contains('hidden')) { 
+            window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; 
             return; 
         }
-
-        // LOGIKA PERINTAH CHAT
+        
+        // Cek mode perintah rahasia
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
         if (pesan === "*#hapus#*") { chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
 
@@ -244,18 +263,18 @@ chatInput.addEventListener('keydown', (e) => {
 });
 chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
 
-// --- 8. TYPING & HEARTBEAT (KEMBALI KALEM SEPERTI ASLI) ---
+// --- 8. TYPING & HEARTBEAT (KEMBALI KE GAYA HALUS/KALEM SEPERTI ASLIMU) ---
 const styleHeartbeat = document.createElement('style');
 styleHeartbeat.innerHTML = `
-    /* Detak Jantung Standby (Merah - Pelan) */
+    /* Detak Jantung Standby (Merah - Pelan & Halus) */
     @keyframes heartbeatRed {
-        0%, 100% { filter: drop-shadow(0px 0px 2px #b32424); transform: scale(1); opacity: 1; }
-        50% { filter: drop-shadow(0px 0px 6px #b32424); transform: scale(1.02); opacity: 0.8; }
+        0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); opacity: 1; }
+        50% { filter: drop-shadow(0px 0px 4px #b32424); transform: scale(1.02); opacity: 0.8; }
     }
-    /* Detak Jantung Typing (Biru - Cepat/Enerjik) */
+    /* Detak Jantung Typing (Biru - Agak Cepat & Halus) */
     @keyframes heartbeatBlue {
-        0%, 100% { filter: drop-shadow(0px 0px 3px #36c); transform: scale(1); opacity: 1; }
-        50% { filter: drop-shadow(0px 0px 10px #36c); transform: scale(1.05); opacity: 0.7; }
+        0%, 100% { filter: drop-shadow(0px 0px 2px #36c); transform: scale(1); opacity: 1; }
+        50% { filter: drop-shadow(0px 0px 6px #36c); transform: scale(1.03); opacity: 0.9; }
     }
 `;
 document.head.appendChild(styleHeartbeat);
@@ -266,9 +285,7 @@ function updateLogoVisuals() {
     logoWiki.style.transition = "all 0.3s ease";
     
     if (isSomeoneTyping) {
-        logoWiki.style.animation = "heartbeatBlue 0.8s infinite ease-in-out";
-        logoWiki.style.filter = "drop-shadow(0px 0px 6px #36c)";
-        logoWiki.style.transform = "scale(1)";
+        logoWiki.style.animation = "heartbeatBlue 1s infinite ease-in-out";
     } else if (isSomeoneOnline) {
         logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out";
     } else {
@@ -367,7 +384,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(teksAsli, data.tipe, pesanBaru, data.timestamp);
     }
     
-    // PENINGKATAN: Auto-scroll saat pesan baru masuk
+    // PENINGKATAN KECIL: Auto-Scroll untuk pengguna HP agar pesan selalu terlihat
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) { 
         if(appContainer) {
             appContainer.scrollTo({ top: appContainer.scrollHeight, behavior: 'smooth' });
