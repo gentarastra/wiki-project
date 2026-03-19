@@ -1,5 +1,5 @@
 // =========================================================================
-// WIKIPEDIA GHOST CHAT - ULTIMATE EDITION
+// WIKIPEDIA GHOST CHAT (APP.JS)
 // =========================================================================
 
 // --- 0. KONFIGURASI FIREBASE ---
@@ -62,11 +62,11 @@ const tombolMenu = document.getElementById('tombol-menu');
 const sidebarKiri = document.getElementById('sidebar-kiri');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
-const appContainer = document.querySelector('.flex-1.overflow-y-auto'); // Ditambahkan untuk auto-scroll
+const appContainer = document.querySelector('.flex-1.overflow-y-auto');
 
 if(menuRahasia) menuRahasia.style.display = "none";
 
-// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI (503 Service Unavailable) ---
+// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
 layarProteksi.className = "fixed inset-0 bg-[#050505] z-[9999] flex flex-col items-center justify-center hidden transition-opacity duration-300";
@@ -90,7 +90,6 @@ layarProteksi.innerHTML = `
     </div>`;
 document.body.appendChild(layarProteksi);
 
-// --- GLOBAL ALERT MODAL ---
 const alertModal = document.createElement('div');
 alertModal.id = "global-alert-modal";
 alertModal.className = "fixed inset-x-0 top-0 p-4 z-[10000] flex justify-center hidden transform -translate-y-full transition-all duration-500 ease-out";
@@ -103,32 +102,15 @@ alertModal.innerHTML = `
 document.body.appendChild(alertModal);
 document.getElementById('close-alert-btn').addEventListener('click', () => { alertModal.classList.add('-translate-y-full'); setTimeout(() => alertModal.classList.add('hidden'), 500); });
 
-// --- PENYEMPURNAAN: FORMAT WAKTU MUNDUR 3 TAHUN ---
+// WAKTU ASLI (REALTIME) SEPERTI PERMINTAAN
 function formatWaktuWiki(timestamp) {
     const dateObj = new Date(timestamp || Date.now());
-    dateObj.setFullYear(dateObj.getFullYear() - 3); // Mundur 3 tahun
-    dateObj.setMinutes(dateObj.getMinutes() - Math.floor(Math.random() * 15)); // Acak menit agar natural
     const tanggal = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const jam = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
     return `${jam}, ${tanggal}`;
 }
 
-// --- 4. GHOST ENTRY & PRESENSI ---
-let keyBuffer = ""; const secretCode = "sandi"; 
-document.addEventListener('keydown', (e) => {
-    // Abaikan jika sedang mengetik di input chat
-    if (document.activeElement === chatInput) return;
-    
-    if (e.key.length === 1) { 
-        keyBuffer += e.key.toLowerCase();
-        if (keyBuffer.length > secretCode.length) keyBuffer = keyBuffer.slice(-secretCode.length);
-        if (keyBuffer === secretCode && halamanRahasia.classList.contains('hidden')) { 
-            jalankanLoading(() => gantiHalaman(halamanRahasia)); 
-            keyBuffer = ""; 
-        }
-    }
-});
-
+// --- 4. PRESENSI ONLINE ---
 const presenceRef = database.ref('status_kehadiran'); 
 let daftarUserOnline = {}; 
 
@@ -165,25 +147,13 @@ presenceRef.on('child_removed', (snapshot) => {
     } 
 });
 
-// --- 5. PANIC TAB, 5 KETUKAN & PANIC LINKS ---
+// --- 5. PANIC TAB & 5 KETUKAN HP ---
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) document.title = "Google"; 
     else { stateRef.once('value').then((snapshot) => { if (snapshot.val()?.diproteksi) document.title = "503 Service Unavailable"; else updateJudulHalaman(); }); }
 });
-
 tombolMenu.addEventListener('click', (e) => { e.stopPropagation(); sidebarKiri.classList.toggle('hidden'); });
 document.addEventListener('click', (e) => { if (!sidebarKiri.contains(e.target) && e.target !== tombolMenu) { if (window.innerWidth < 768) sidebarKiri.classList.add('hidden'); } });
-
-// PENYEMPURNAAN: Fitur Panic Links (Link aktif jika tidak di halaman rahasia)
-document.querySelectorAll('#halaman-utama span.text-\\[\\#0645ad\\]').forEach(link => {
-    link.addEventListener('click', (e) => {
-        if (!halamanUtama.classList.contains('hidden')) {
-            const topik = e.target.innerText.replace(/["']/g, "");
-            window.open(`https://id.wikipedia.org/wiki/${topik}`, '_blank');
-        }
-    });
-    link.style.cursor = "pointer";
-});
 
 let idleTimeout;
 function resetIdleTimer() {
@@ -237,19 +207,29 @@ function gantiHalaman(tujuan) {
     halamanUtama.classList.add('hidden'); halamanRahasia.classList.add('hidden'); halamanRiwayat.classList.add('hidden'); tujuan.classList.remove('hidden');
     if (tujuan === halamanRahasia) { chatInput.placeholder = "Ketik rahasia..."; chatInput.focus(); } else { chatInput.placeholder = "Telusuri Wikipedia"; }
     updateJudulHalaman(); if (window.innerWidth < 768) sidebarKiri.classList.add('hidden');
-    
-    // Auto-scroll ke atas saat pindah halaman
-    if(appContainer) appContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    if(appContainer) appContainer.scrollTo({ top: 0, behavior: 'smooth' }); // PENINGKATAN: Auto-scroll saat ganti halaman
 }
 menuUtama.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 logoWiki.addEventListener('click', () => jalankanLoading(() => gantiHalaman(halamanUtama)));
 
-// --- 7. LOGIKA KIRIM CHAT (E2EE) ---
+// --- 7. LOGIKA KIRIM CHAT & PASSWORD ---
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
         if (pesan === "") return;
-        if (halamanRahasia.classList.contains('hidden')) { window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; return; }
+
+        // LOGIKA PASSWORD HP: Jika di halaman pencarian
+        if (!halamanUtama.classList.contains('hidden')) { 
+            if (pesan.toLowerCase() === "sandi") {
+                jalankanLoading(() => gantiHalaman(halamanRahasia));
+                chatInput.value = "";
+            } else {
+                window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`;
+            }
+            return; 
+        }
+
+        // LOGIKA PERINTAH CHAT
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
         if (pesan === "*#hapus#*") { chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
 
@@ -264,18 +244,18 @@ chatInput.addEventListener('keydown', (e) => {
 });
 chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
 
-// --- 8. TYPING & HEARTBEAT (PENYEMPURNAAN WARNA SVG) ---
+// --- 8. TYPING & HEARTBEAT (KEMBALI KALEM SEPERTI ASLI) ---
 const styleHeartbeat = document.createElement('style');
 styleHeartbeat.innerHTML = `
     /* Detak Jantung Standby (Merah - Pelan) */
     @keyframes heartbeatRed {
-        0%, 100% { filter: drop-shadow(0px 0px 2px #b32424); transform: scale(1); color: #b32424; }
-        50% { filter: drop-shadow(0px 0px 6px #b32424); transform: scale(1.02); color: #b32424; }
+        0%, 100% { filter: drop-shadow(0px 0px 2px #b32424); transform: scale(1); opacity: 1; }
+        50% { filter: drop-shadow(0px 0px 6px #b32424); transform: scale(1.02); opacity: 0.8; }
     }
     /* Detak Jantung Typing (Biru - Cepat/Enerjik) */
     @keyframes heartbeatBlue {
-        0%, 100% { filter: drop-shadow(0px 0px 3px #36c); transform: scale(1); color: #36c; }
-        50% { filter: drop-shadow(0px 0px 10px #36c); transform: scale(1.05); color: #36c; }
+        0%, 100% { filter: drop-shadow(0px 0px 3px #36c); transform: scale(1); opacity: 1; }
+        50% { filter: drop-shadow(0px 0px 10px #36c); transform: scale(1.05); opacity: 0.7; }
     }
 `;
 document.head.appendChild(styleHeartbeat);
@@ -287,13 +267,14 @@ function updateLogoVisuals() {
     
     if (isSomeoneTyping) {
         logoWiki.style.animation = "heartbeatBlue 0.8s infinite ease-in-out";
+        logoWiki.style.filter = "drop-shadow(0px 0px 6px #36c)";
+        logoWiki.style.transform = "scale(1)";
     } else if (isSomeoneOnline) {
         logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out";
     } else {
         logoWiki.style.animation = "none";
         logoWiki.style.filter = "none";
         logoWiki.style.transform = "scale(1)";
-        logoWiki.style.color = "#202122"; // Kembali ke warna asli Wikipedia
     }
 }
 
@@ -356,15 +337,14 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
 
         if (pesanBaru) {
             const liRef = document.createElement('li');
-            liRef.className = "mb-2 break-words animate-fade-in text-[13px] md:text-[14px]";
+            liRef.className = "mb-2 animate-fade-in text-[13px] md:text-[14px]";
             if (data.tipe === 'bom') { liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${teksAsli}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`; } 
             else if (data.tipe === 'image') {
                 const randNum = Math.floor(Math.random() * 99) + 1;
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="relative group cursor-pointer text-[#0645ad] font-mono hover:underline">[${randNum}]<div class="absolute bottom-full left-0 mb-2 hidden group-hover:block z-[100000]"><div class="bg-white border border-gray-300 shadow-2xl p-1 rounded-sm w-max max-w-[250px]"><img src="${teksAsli}" class="w-full h-auto object-cover" alt="Media Ref"></div></div></span>. <i>Media Arsip Eksternal</i>, 2026.`;
             } 
             else if (isMe) { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${teksAsli}"</span>. <i>Arsip Pribadi</i>, 2026.`; } 
-            else { liRef.innerHTML = `<span class="text-[#54595d] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic hover:underline cursor-pointer">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`; }
-            
+            else { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`; }
             daftarReferensi.appendChild(liRef);
             if (daftarReferensi.children.length > 7) daftarReferensi.removeChild(daftarReferensi.firstElementChild);
         }
@@ -387,7 +367,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(teksAsli, data.tipe, pesanBaru, data.timestamp);
     }
     
-    // PENYEMPURNAAN: Auto-scroll yang adaptif
+    // PENINGKATAN: Auto-scroll saat pesan baru masuk
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) { 
         if(appContainer) {
             appContainer.scrollTo({ top: appContainer.scrollHeight, behavior: 'smooth' });
