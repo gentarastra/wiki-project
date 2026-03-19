@@ -259,6 +259,8 @@ function updateLogoVisuals() {
     if (isSomeoneTyping) {
         // MODE 2: Mengetik (Biru Berkedip Cepat - 0.8 detik)
         logoWiki.style.animation = "heartbeatBlue 0.8s infinite ease-in-out";
+        logoWiki.style.filter = "drop-shadow(0px 0px 6px #36c)";
+        logoWiki.style.transform = "scale(1)";
     } else if (isSomeoneOnline) {
         // MODE 1: Online / Standby (Merah Berdenyut Pelan - 2.5 detik)
         logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out";
