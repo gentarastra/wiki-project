@@ -581,7 +581,11 @@ let isSomeoneTyping = false;
 function updateLogoVisuals() {
     const adaOnline = Object.keys(daftarUserOnline).length > 0;
     logoWiki.style.transition = "all 0.3s ease";
-    if (isSomeoneTyping) {
+
+    // Sebelum login: hanya tampilkan online/offline, TIDAK tampilkan "mengetik"
+    const bolehTampilTyping = !!KUNCI_SESI;
+
+    if (bolehTampilTyping && isSomeoneTyping) {
         logoWiki.style.animation = "heartbeatBlue 0.9s infinite ease-in-out";
         setStatusBadge('typing');
     } else if (adaOnline) {
@@ -606,7 +610,10 @@ chatInput.addEventListener('input', () => {
 
 typingRef.on('value', snap => {
     isSomeoneTyping = false;
-    if (snap.val()) Object.keys(snap.val()).forEach(id => { if (id !== myId) isSomeoneTyping = true; });
+    // Hanya proses status mengetik jika sudah login
+    if (KUNCI_SESI && snap.val()) {
+        Object.keys(snap.val()).forEach(id => { if (id !== myId) isSomeoneTyping = true; });
+    }
     updateLogoVisuals();
 });
 
