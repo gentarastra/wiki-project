@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Efek Fokus Khas Wikipedia */
+        /* Efek Fokus Khas Wikipedia (Vector 2022) */
         .vector-search:focus { 
             box-shadow: inset 0 0 0 1px #36c, inset 0 0 0 2px #36c; 
         }
@@ -15,154 +15,155 @@
             background-color: #eaecf0; 
             border-radius: 2px; 
         }
-        /* Scrollbar Halus agar Tetap Estetik */
+        
+        /* Scrollbar Halus agar Tetap Estetik & Bersih */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #c8ccd1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a2a9b1; }
         
-        /* Animasi Transisi Halaman */
+        /* Animasi Transisi Halaman yang Lembut */
         .animate-fade-in {
             animation: fadeIn 0.3s ease-in-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Tipografi Khusus Wikipedia */
+        .wiki-serif { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; }
     </style>
 </head>
-<body class="bg-white text-[#202122] font-sans h-screen flex flex-col overflow-hidden" id="main-body">
+<body class="bg-white text-[#202122] font-sans h-screen flex flex-col overflow-hidden selection:bg-[#c8ccd1] selection:text-black" id="main-body">
 
-    <header class="flex items-center justify-between px-3 md:px-6 py-2 border-b border-gray-200 bg-white z-40 shadow-sm gap-2 md:gap-4 relative">
+    <header class="flex items-center justify-between px-3 md:px-6 py-2 border-b border-[#a2a9b1] bg-white z-40 shadow-[0_1px_2px_rgba(0,0,0,0.05)] gap-2 md:gap-4 relative">
         <div class="flex items-center gap-2 md:gap-4 shrink-0">
-            <div id="tombol-menu" class="cursor-pointer p-2 vector-menu rounded">
+            <div id="tombol-menu" class="cursor-pointer p-2 vector-menu rounded transition-colors">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 3h18v2H1V3zm0 6h18v2H1V9zm0 6h18v2H1v-2z" fill="#000"/>
+                    <path d="M1 3h18v2H1V3zm0 6h18v2H1V9zm0 6h18v2H1v-2z" fill="#202122"/>
                 </svg>
             </div>
-            <div id="logo-wiki" class="flex items-end space-x-2 cursor-pointer">
-                <span class="font-serif text-xl md:text-2xl font-bold tracking-tight">WIKIPEDIA</span>
+            
+            <div id="logo-wiki" class="flex items-center space-x-2 cursor-pointer group">
+                <svg class="w-7 h-7 md:w-8 md:h-8 text-[#202122]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+                <span class="wiki-serif text-xl md:text-[22px] font-bold tracking-tight pt-1">WIKIPEDIA</span>
             </div>
         </div>
 
         <div class="flex-1 w-full max-w-2xl relative min-w-0">
             <input type="text" id="rahasia-input" 
-                class="w-full bg-[#f8f9fa] border border-[#a2a9b1] rounded-[2px] py-1.5 pl-9 pr-3 text-[13px] md:text-sm text-gray-800 transition-all focus:bg-white focus:outline-none vector-search" 
+                class="w-full bg-[#eaecf0] border border-[#a2a9b1] rounded-[2px] py-[6px] pl-9 pr-3 text-[13px] md:text-sm text-[#202122] transition-all focus:bg-white focus:outline-none vector-search placeholder-[#72777d]" 
                 placeholder="Telusuri Wikipedia" autocomplete="off">
             <svg class="absolute left-3 top-2 md:top-2.5" width="16" height="16" viewBox="0 0 20 20" fill="#72777d" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12.2 13.6a7 7 0 111.4-1.4l5.4 5.4-1.4 1.4-5.4-5.4zM8 13a5 5 0 100-10 5 5 0 000 10z"/>
             </svg>
         </div>
 
-        <div class="flex space-x-3 md:space-x-4 text-[13px] md:text-sm text-[#0645ad] shrink-0">
-            <span class="cursor-pointer hover:underline hidden md:block text-gray-500">Bicara</span>
+        <div class="flex space-x-3 md:space-x-4 text-[13px] md:text-sm text-[#0645ad] shrink-0 items-center">
+            <span class="cursor-pointer hover:underline hidden md:block text-[#72777d]">Bicara</span>
             <span class="cursor-pointer hover:underline font-bold">Masuk</span>
         </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden relative" id="app-container">
         
-        <div id="sidebar-kiri" class="w-48 bg-[#f8f9fa] md:bg-white h-full p-4 pl-6 hidden absolute md:relative z-30 shadow-xl md:shadow-none border-r border-gray-200 overflow-y-auto">
-            <div class="text-[13px] text-gray-500 mb-2 mt-2 md:mt-0 font-semibold uppercase tracking-wider">Navigasi</div>
-            <ul class="text-[14px] text-[#0645ad] space-y-3 md:space-y-2 mb-8 border-b border-gray-200 pb-4">
+        <div id="sidebar-kiri" class="w-48 bg-[#f8f9fa] md:bg-white h-full p-4 pl-6 hidden absolute md:relative z-30 shadow-2xl md:shadow-none border-r border-[#eaecf0] overflow-y-auto transition-all">
+            <div class="text-[12px] text-[#72777d] mb-2 mt-2 md:mt-0 font-bold uppercase tracking-wider">Navigasi</div>
+            <ul class="text-[14px] text-[#0645ad] space-y-2 mb-6 border-b border-[#eaecf0] pb-4">
                 <li class="cursor-pointer hover:underline" id="menu-utama">Halaman Utama</li>
                 <li class="cursor-pointer hover:underline">Daftar isi</li>
                 <li class="cursor-pointer hover:underline" id="menu-rahasia">Peristiwa terkini</li>
                 <li class="cursor-pointer hover:underline">Artikel sembarang</li>
             </ul>
-            <div class="text-[13px] text-gray-500 mb-2 font-semibold uppercase tracking-wider">Komunitas</div>
-            <ul class="text-[14px] text-[#0645ad] space-y-3 md:space-y-2">
+            <div class="text-[12px] text-[#72777d] mb-2 font-bold uppercase tracking-wider">Komunitas</div>
+            <ul class="text-[14px] text-[#0645ad] space-y-2">
                 <li class="cursor-pointer hover:underline">Warung Kopi</li>
                 <li class="cursor-pointer hover:underline">Portal komunitas</li>
                 <li class="cursor-pointer hover:underline">Bantuan</li>
             </ul>
         </div>
 
-        <div class="flex-1 overflow-y-auto bg-white pt-4 md:pt-6 pb-24 w-full">
-            <div class="max-w-4xl mx-auto px-4 sm:px-8 md:px-10">
+        <div class="flex-1 overflow-y-auto bg-white pt-4 md:pt-8 pb-24 w-full">
+            <div class="max-w-[960px] mx-auto px-4 sm:px-8 md:px-12">
                 
                 <div id="halaman-utama" class="block animate-fade-in text-[14px] md:text-[15px] leading-[1.6]">
-                    <div class="border-b border-gray-300 pb-1 mb-4 md:mb-6">
-                        <h1 class="text-3xl md:text-4xl font-serif text-[#202122]">Bumi</h1>
-                        <div class="text-sm text-gray-600 italic">Dari Wikipedia bahasa Indonesia, ensiklopedia bebas</div>
+                    <div class="border-b border-[#a2a9b1] pb-1 mb-4 md:mb-6">
+                        <h1 class="text-3xl md:text-[32px] wiki-serif text-[#202122] font-normal">Bumi</h1>
+                        <div class="text-[13px] text-[#54595d] mt-1">Dari Wikipedia bahasa Indonesia, ensiklopedia bebas</div>
                     </div>
 
-                    <div class="flex flex-col md:flex-row-reverse gap-6">
-                        <aside class="w-full md:w-72 bg-[#f8f9fa] border border-[#a2a9b1] p-2 shrink-0 self-start mb-4">
+                    <div class="flex flex-col lg:flex-row-reverse gap-6">
+                        <aside class="w-full lg:w-[300px] bg-[#f8f9fa] border border-[#a2a9b1] p-2 shrink-0 self-start mb-4">
                             <table class="w-full text-[12px] border-collapse">
                                 <thead>
-                                    <tr><th colspan="2" class="bg-[#cedff2] py-2 text-sm font-bold">Bumi</th></tr>
-                                    <tr><td colspan="2" class="p-2"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/240px-The_Earth_seen_from_Apollo_17.jpg" class="mx-auto border border-gray-300 shadow-sm" alt="Foto Bumi"></td></tr>
+                                    <tr><th colspan="2" class="bg-[#cedff2] py-2 text-sm font-bold border border-[#a2a9b1]">Bumi</th></tr>
+                                    <tr><td colspan="2" class="p-2 border border-[#a2a9b1] text-center bg-white"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/240px-The_Earth_seen_from_Apollo_17.jpg" class="mx-auto border border-gray-300 shadow-sm" alt="Foto Bumi"></td></tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="border-t border-gray-200"><th class="text-left py-1 pr-2 font-bold w-1/3 text-gray-600 uppercase tracking-tighter">Ciri orbit</th><td></td></tr>
-                                    <tr><th class="text-left font-normal pl-2">Aphelion</th><td>152.100.000 km</td></tr>
-                                    <tr><th class="text-left font-normal pl-2">Perihelion</th><td>147.095.000 km</td></tr>
-                                    <tr class="border-t border-gray-200"><th class="text-left py-1 pr-2 font-bold text-gray-600 uppercase tracking-tighter">Ciri fisik</th><td></td></tr>
-                                    <tr><th class="text-left font-normal pl-2">Jari-jari rata-rata</th><td>6.371,0 km</td></tr>
-                                    <tr><th class="text-left font-normal pl-2">Massa</th><td>5,972 × 10<sup>24</sup> kg</td></tr>
-                                    <tr><th class="text-left font-normal pl-2">Atmosfer</th><td>78% Nitrogen, 21% Oksigen</td></tr>
+                                    <tr class="border-t border-[#a2a9b1] bg-[#eaecf0]"><th colspan="2" class="text-center py-1 font-bold text-[#202122]">Ciri orbit</th></tr>
+                                    <tr class="border border-[#a2a9b1] bg-white"><th class="text-left font-normal p-1 pl-2 w-[40%]">Aphelion</th><td class="p-1">152.100.000 km</td></tr>
+                                    <tr class="border border-[#a2a9b1] bg-[#f8f9fa]"><th class="text-left font-normal p-1 pl-2">Perihelion</th><td class="p-1">147.095.000 km</td></tr>
+                                    <tr class="border-t border-[#a2a9b1] bg-[#eaecf0]"><th colspan="2" class="text-center py-1 font-bold text-[#202122]">Ciri fisik</th></tr>
+                                    <tr class="border border-[#a2a9b1] bg-white"><th class="text-left font-normal p-1 pl-2">Jari-jari rata-rata</th><td class="p-1">6.371,0 km</td></tr>
+                                    <tr class="border border-[#a2a9b1] bg-[#f8f9fa]"><th class="text-left font-normal p-1 pl-2">Massa</th><td class="p-1">5,972 × 10<sup>24</sup> kg</td></tr>
                                 </tbody>
                             </table>
                         </aside>
 
-                        <div class="flex-1 text-gray-800 text-justify">
+                        <div class="flex-1 text-[#202122]">
                             <p class="mb-4">
-                                <b>Bumi</b> adalah planet ketiga dari <span class="text-[#0645ad] cursor-pointer hover:underline">Matahari</span> yang merupakan planet terpadat dan terbesar kelima dari delapan planet dalam Tata Surya. Bumi juga merupakan planet terbesar dari empat planet kebumian di Tata Surya. Terkadang Bumi disebut dengan dunia atau "Planet Biru".
+                                <b>Bumi</b> adalah planet ketiga dari <span class="text-[#0645ad] cursor-pointer hover:underline" title="Matahari">Matahari</span> yang merupakan planet terpadat dan terbesar kelima dari delapan planet dalam Tata Surya. Bumi juga merupakan planet terbesar dari empat planet kebumian di Tata Surya. Terkadang Bumi disebut dengan dunia atau "Planet Biru".
                             </p>
 
-                            <div class="inline-block bg-[#f8f9fa] border border-[#a2a9b1] p-3 mb-6 min-w-[200px]">
-                                <div class="text-center font-bold mb-2">Daftar isi</div>
+                            <div class="inline-block bg-[#f8f9fa] border border-[#a2a9b1] p-4 mb-6 min-w-[200px]">
+                                <div class="text-center font-bold mb-2 text-[14px]">Daftar isi</div>
                                 <ul class="text-[13px] text-[#0645ad] space-y-1">
-                                    <li><a href="#" class="hover:underline">1 Nama dan etimologi</a></li>
-                                    <li><a href="#" class="hover:underline">2 Kronologi pembentukan</a></li>
-                                    <li><a href="#" class="hover:underline">3 Komposisi kimia dan struktur</a></li>
-                                    <li><a href="#" class="hover:underline">4 Litosfer dan biosfer</a></li>
+                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">1</span> Nama dan etimologi</a></li>
+                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">2</span> Kronologi pembentukan</a></li>
+                                    <li><a href="#" class="hover:underline"><span class="text-[#202122] mr-1">3</span> Komposisi kimia dan struktur</a></li>
                                 </ul>
                             </div>
 
-                            <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-6 mb-3">Nama dan etimologi</h2>
+                            <h2 class="text-[22px] md:text-2xl wiki-serif border-b border-[#a2a9b1] pb-1 mt-4 mb-3">Nama dan etimologi</h2>
                             <p class="mb-4">
                                 Kata "Bumi" dalam bahasa Indonesia berasal dari bahasa Sanskerta <i>bhūmi</i>, yang berarti tanah atau daratan. Nama planet ini dalam bahasa Inggris, <i>Earth</i>, berasal dari kata bahasa Inggris kuno <i>eorthe</i> yang juga merujuk pada tanah. Secara terminologi astronomi, Bumi sering diberi simbol <span class="font-mono text-lg">⊕</span>.
                             </p>
 
-                            <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-8 mb-3">Kronologi pembentukan</h2>
+                            <h2 class="text-[22px] md:text-2xl wiki-serif border-b border-[#a2a9b1] pb-1 mt-8 mb-3">Kronologi pembentukan</h2>
                             <p class="mb-4">
-                                Berdasarkan penanggalan radiometrik meteorit dan batuan tertua, Bumi diperkirakan terbentuk sekitar 4,54 miliar tahun yang lalu. Gravitasi Bumi berinteraksi dengan objek lain di ruang angkasa, terutama Matahari dan <span class="text-[#0645ad] cursor-pointer hover:underline">Bulan</span>, yang merupakan satu-satunya satelit alami Bumi.
-                            </p>
-                            <p class="mb-4 italic text-gray-600">
-                                Artikel utama: <span class="text-[#0645ad] cursor-pointer hover:underline">Sejarah Bumi</span>.
+                                Berdasarkan penanggalan radiometrik meteorit dan batuan tertua, Bumi diperkirakan terbentuk sekitar 4,54 miliar tahun yang lalu. Gravitasi Bumi berinteraksi dengan objek lain di ruang angkasa, terutama Matahari dan <span class="text-[#0645ad] cursor-pointer hover:underline">Bulan</span>.
                             </p>
 
-                            <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-8 mb-3">Komposisi kimia</h2>
-                            <p class="mb-4">
-                                Massa Bumi kira-kira adalah 5,97 × 10<sup>24</sup> kg. Komposisi kimianya terdiri dari Besi (32,1%), Oksigen (30,1%), Silikon (15,1%), Magnesium (13,9%), Belerang (2,9%), Nikel (1,8%), Kalsium (1,5%), dan Aluminium (1,4%); sisanya terdiri dari unsur-unsur lainnya dalam jumlah kecil.
-                            </p>
-
-                            <div class="mt-8 border-t border-gray-200 pt-4 text-[12px] text-gray-500 italic">
-                                Terakhir disunting pada 18 Maret 2026. Teks tersedia di bawah Lisensi Atribusi-BerbagiSerupa Creative Commons.
+                            <div class="mt-12 border-t border-[#eaecf0] pt-4 text-[12px] text-[#54595d]">
+                                Halaman ini terakhir diubah pada 19 Maret 2026, pukul 14.05.<br>Teks tersedia di bawah <a href="#" class="text-[#0645ad] hover:underline">Lisensi Atribusi-BerbagiSerupa Creative Commons</a>.
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="halaman-rahasia" class="hidden animate-fade-in">
-                    <div class="flex justify-between items-end border-b border-gray-300 pb-1 mb-4 md:mb-6">
-                        <h1 class="text-3xl md:text-4xl font-serif text-[#202122]">Sejarah Nusantara</h1>
-                        <div class="flex space-x-3 text-[12px] md:text-[13px] text-[#0645ad] mb-1 hidden sm:flex">
-                            <span class="text-black font-semibold border-b-2 border-black pb-[5px]">Baca</span>
-                            <span class="cursor-pointer hover:underline">Sunting</span>
-                            <span class="cursor-pointer hover:underline">Lihat riwayat</span>
+                    <div class="flex justify-between items-end border-b border-[#a2a9b1] pb-1 mb-4 md:mb-6">
+                        <h1 class="text-3xl md:text-[32px] wiki-serif text-[#202122] font-normal">Sejarah Nusantara</h1>
+                        
+                        <div class="flex space-x-4 text-[13px] text-[#0645ad] mb-1 hidden sm:flex">
+                            <span class="text-[#202122] font-semibold border-b-[3px] border-[#202122] pb-[4px]">Baca</span>
+                            <span class="cursor-pointer hover:underline pb-[4px]">Sunting</span>
+                            <span class="cursor-pointer hover:underline pb-[4px]">Lihat riwayat</span>
                         </div>
                     </div>
 
-                    <div class="text-[14px] md:text-[15px] leading-[1.6] md:leading-[1.7] text-justify text-gray-800">
+                    <div class="text-[14px] md:text-[15px] leading-[1.6] text-[#202122]">
                         <p class="mb-4"><strong>Sejarah Nusantara</strong> merujuk pada rentetan peristiwa yang terjadi di kepulauan yang kini dikenal sebagai <span class="text-[#0645ad] cursor-pointer hover:underline">Indonesia</span>. Wilayah ini memiliki sejarah panjang yang diwarnai oleh interaksi berbagai budaya.</p>
                         
-                        <h2 class="text-xl md:text-2xl font-serif border-b border-gray-200 pb-1 mt-6 md:mt-8 mb-3 md:mb-4">Kejayaan Majapahit</h2>
-                        <p class="mb-6">Kerajaan <span class="text-[#0645ad] cursor-pointer hover:underline">Majapahit</span> yang didirikan oleh Raden Wijaya pada tahun 1293 M mencapai puncak kejayaannya.</p>
+                        <h2 class="text-[22px] md:text-2xl wiki-serif border-b border-[#a2a9b1] pb-1 mt-6 mb-3">Kejayaan Majapahit</h2>
+                        <p class="mb-6">Kerajaan <span class="text-[#0645ad] cursor-pointer hover:underline">Majapahit</span> yang didirikan oleh Raden Wijaya pada tahun 1293 M mencapai puncak kejayaannya pada masa pemerintahan Hayam Wuruk.</p>
 
-                        <div class="mt-8 md:mt-12 pt-5 md:pt-6 border-t border-gray-300">
-                            <h2 class="text-lg md:text-xl font-serif font-bold mb-4 text-[#202122]">Referensi</h2>
-                            <ol id="daftar-referensi" class="list-decimal pl-5 md:pl-6 text-[13px] md:text-[14px] text-gray-700 font-sans leading-relaxed">
+                        <div class="mt-8 md:mt-10 pt-5 md:pt-6 border-t border-[#a2a9b1]">
+                            <h2 class="text-[18px] md:text-xl wiki-serif font-bold mb-4 text-[#202122]">Referensi</h2>
+                            
+                            <ol id="daftar-referensi" class="list-decimal pl-5 md:pl-8 text-[13px] md:text-[14px] text-[#202122] font-sans leading-relaxed break-words">
                                 <li class="mb-2"><span class="text-[#36c] cursor-pointer">^</span> Ricklefs, M.C. (2001). <i>Sejarah Indonesia Modern</i>. Stanford University Press.</li>
                                 </ol>
                         </div>
@@ -170,15 +171,15 @@
                 </div>
 
                 <div id="halaman-riwayat" class="hidden animate-fade-in">
-                    <div class="flex items-end border-b border-gray-300 pb-1 mb-4 md:mb-6">
-                        <h1 class="text-2xl md:text-3xl font-serif text-[#202122]">Riwayat revisi "Sejarah Nusantara"</h1>
+                    <div class="flex items-end border-b border-[#a2a9b1] pb-1 mb-4 md:mb-6">
+                        <h1 class="text-2xl md:text-[32px] wiki-serif text-[#202122] font-normal">Riwayat revisi "Sejarah Nusantara"</h1>
                     </div>
                     
-                    <div class="bg-[#f8f9fa] border border-[#a2a9b1] p-3 md:p-4 mb-6 text-[13px] md:text-[14px] text-gray-800 rounded-sm">
+                    <div class="bg-[#eaecf0] border border-[#a2a9b1] p-3 md:p-4 mb-6 text-[13px] md:text-[14px] text-[#202122] rounded-[2px]">
                         <span class="font-bold">Pemeliharaan log:</span> Tampilan di bawah adalah daftar perubahan halaman yang diarsipkan untuk keperluan audit sistem. <a href="#" class="text-[#0645ad] hover:underline">Pelajari selengkapnya</a>.
                     </div>
 
-                    <ul id="daftar-arsip-lengkap" class="text-[13px] md:text-[14px] font-sans text-gray-800 space-y-2 list-none m-0 p-0">
+                    <ul id="daftar-arsip-lengkap" class="text-[13px] md:text-[14px] font-sans text-[#202122] space-y-0 list-none m-0 p-0">
                         </ul>
                 </div>
 
@@ -193,13 +194,12 @@
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <h1 class="text-xl md:text-2xl font-semibold mb-2 md:mb-3">404 Not Found</h1>
-            <p class="text-[14px] md:text-base text-gray-600 mb-6">Maaf, halaman yang Anda cari tidak tersedia atau telah dipindahkan secara permanen.</p>
-            <a href="index.html" class="text-[#36c] hover:underline font-medium text-[14px] md:text-base">Kembali ke beranda</a>
+            <h1 class="text-xl md:text-2xl font-semibold mb-2 md:mb-3 text-[#202122]">404 Not Found</h1>
+            <p class="text-[14px] md:text-base text-[#54595d] mb-6">Maaf, halaman yang Anda cari tidak tersedia atau telah dipindahkan secara permanen.</p>
+            <a href="index.html" class="text-[#0645ad] hover:underline font-medium text-[14px] md:text-base">Kembali ke beranda</a>
         </div>
     </div>
 
-    
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
