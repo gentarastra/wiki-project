@@ -1,5 +1,5 @@
 // =========================================================================
-// WIKIPEDIA GHOST CHAT (APP.JS) - ELEGANT WHISPER & ALERT
+// WIKIPEDIA GHOST CHAT (APP.JS) - SENSOR WHISPER BERBEDA WARNA
 // =========================================================================
 
 // --- 0. KONFIGURASI FIREBASE ---
@@ -105,8 +105,7 @@ customStyles.innerHTML = `
         100% { background-position: -200% center; }
     }
     
-    .teks-sensor {
-        background: linear-gradient(90deg, #1f2937 0%, #374151 25%, #1f2937 50%);
+    .teks-sensor, .teks-sensor-me {
         background-size: 200% auto;
         color: transparent;
         border-radius: 4px;
@@ -121,15 +120,25 @@ customStyles.innerHTML = `
         position: relative;
     }
     
+    /* Sensor Abu-abu Gelap untuk Anon (Orang Lain) */
+    .teks-sensor {
+        background-image: linear-gradient(90deg, #1f2937 0%, #374151 25%, #1f2937 50%);
+    }
+    
+    /* Sensor Biru Gelap untuk ME (Diri Sendiri) */
+    .teks-sensor-me {
+        background-image: linear-gradient(90deg, #0f172a 0%, #1e3a8a 25%, #0f172a 50%);
+    }
+    
     @media (hover: hover) {
-        .teks-sensor:hover { 
+        .teks-sensor:hover, .teks-sensor-me:hover { 
             background: rgba(0, 0, 0, 0.04); 
             color: #111827; 
             box-shadow: none; 
             animation: none;
         }
     }
-    .teks-sensor:active { 
+    .teks-sensor:active, .teks-sensor-me:active { 
         background: rgba(0, 0, 0, 0.04); 
         color: #111827; 
         box-shadow: none; 
@@ -325,9 +334,11 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         let badge = isMe ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ME</span>` : `<span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold tracking-wider shrink-0 mt-0.5">ANON</span>`;
         
         let teksArsip;
+        let classSensor = isMe ? "teks-sensor-me" : "teks-sensor"; // Penentuan class CSS berdasarkan pengirim
+
         if (data.tipe === 'bom') { teksArsip = `<span class="text-red-600 font-bold bg-red-50 border border-red-200 px-2 py-0.5 rounded animate-pulse">🔥 HANCUR DALAM <span id="arsip-timer-${snapshot.key}">10</span>s: "${teksAsli}"</span>`; } 
         else if (data.tipe === 'image') { teksArsip = `<span class="text-gray-900 font-medium">📷 Lampiran Media: <a href="${teksAsli}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar</a></span>`; } 
-        else if (data.tipe === 'whisper') { teksArsip = `<span class="teks-sensor" title="Tahan / Arahkan kursor untuk membaca">${teksAsli}</span>`; }
+        else if (data.tipe === 'whisper') { teksArsip = `<span class="${classSensor}" title="Tahan / Arahkan kursor untuk membaca">${teksAsli}</span>`; }
         else { teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${teksAsli}</span>` : `<span class="text-gray-700 italic break-words">${teksAsli}</span>`; }
 
         liArsip.innerHTML = `<div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5"><div><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span></div><div class="mt-0.5">${waktuFormatLengkap}</div></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
@@ -341,7 +352,13 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
                 const randNum = Math.floor(Math.random() * 99) + 1;
                 liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="relative group cursor-pointer text-[#0645ad] font-mono hover:underline">[${randNum}]<div class="absolute bottom-full left-0 mb-2 hidden group-hover:block z-[100000]"><div class="bg-white border border-gray-300 shadow-2xl p-1 rounded-sm w-max max-w-[250px]"><img src="${teksAsli}" class="w-full h-auto object-cover" alt="Media Ref"></div></div></span>. <i>Media Arsip Eksternal</i>, 2026.`;
             } 
-            else if (data.tipe === 'whisper') { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="teks-sensor">"${teksAsli}"</span>. <i>Dokumen Terklasifikasi</i>, 2026.`; }
+            else if (data.tipe === 'whisper') { 
+                if (isMe) {
+                    liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="${classSensor}">"${teksAsli}"</span>. <i>Arsip Pribadi (Terklasifikasi)</i>, 2026.`; 
+                } else {
+                    liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="${classSensor}">"${teksAsli}"</span>. <i>Sumber Luar (Terklasifikasi)</i>, 2026.`; 
+                }
+            }
             else if (isMe) { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${teksAsli}"</span>. <i>Arsip Pribadi</i>, 2026.`; } 
             else { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`; }
             daftarReferensi.appendChild(liRef);
