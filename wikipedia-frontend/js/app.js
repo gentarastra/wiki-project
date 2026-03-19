@@ -203,12 +203,12 @@ const sandiUmpan = "tugas"; // Sandi Decoy/Umpan
 
 function alihkanDatabase(mode) {
     jalankanLoading(() => {
-        if (typeof chatListener !== 'undefined') activeChatRef.off('child_added', chatListener);
+        // 1. MATIKAN SEMUA KONEKSI DATABASE SEBELUMNYA SECARA TOTAL
+        // Ini memastikan tidak ada obrolan yang bocor atau tumpang tindih
+        activeChatRef.off(); 
         
-        // HANYA bersihkan Arsip Rahasia. 
-        // Referensi di halaman utama DIBIARKAN agar penyamaran tetap natural.
         daftarArsipLengkap.innerHTML = ""; 
-        // daftarReferensi.innerHTML = ""; <--- BARIS INI YANG DIHAPUS
+        // (Referensi tidak dihapus agar penyamaran Wikipedia tetap natural)
         
         if (mode === 'asli') {
             activeChatRef = chatRefReal;
@@ -216,6 +216,16 @@ function alihkanDatabase(mode) {
         } else if (mode === 'umpan') {
             activeChatRef = chatRefDecoy;
             document.documentElement.style.setProperty('--warna-aksen', '#4a5568'); 
+            
+            // 2. OTOMATIS SUNTIKKAN OBROLAN PALSU JIKA RUANG UMPAN KOSONG
+            chatRefDecoy.once('value', snapshot => {
+                if (!snapshot.exists()) {
+                    const waktu = Date.now();
+                    // Menambahkan 2 riwayat chat palsu seolah-olah sedang kerja kelompok
+                    chatRefDecoy.push({ senderId: "anon_teman", teks: enkripsiPesan("Eh, PPT tugas sejarah nusantara bagian Majapahit udah sampai mana?"), tipe: 'chat', timestamp: waktu - 60000 });
+                    chatRefDecoy.push({ senderId: myId, teks: enkripsiPesan("Lagi gue kerjain nih, bentar lagi beres. Deadline kapan sih?"), tipe: 'chat', timestamp: waktu - 30000 });
+                }
+            });
         }
         
         waktuMulaiSesi = Date.now(); 
