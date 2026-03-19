@@ -1,5 +1,5 @@
 // =========================================================================
-// WIKIPEDIA GHOST CHAT (APP.JS) - CLASSIC GHOST ENTRY (BUG FIX)
+// WIKIPEDIA GHOST CHAT (APP.JS) - ELEGANT ALERT UI
 // =========================================================================
 
 // --- 0. KONFIGURASI FIREBASE ---
@@ -24,7 +24,6 @@ if (!myId) {
     localStorage.setItem('wiki_agen_id', myId);
 }
 const waktuMulaiSesi = Date.now();
-
 const KUNCI_ENKRIPSI = "ProtokolSandiNusantara2026";
 
 // --- 1. FITUR KEAMANAN: ENKRIPSI & DEKRIPSI ---
@@ -64,7 +63,7 @@ const appContainer = document.querySelector('.flex-1.overflow-y-auto');
 
 if(menuRahasia) menuRahasia.style.display = "none";
 
-// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI ---
+// --- LAYAR BLUR PROTEKSI (503 ERROR) ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
 layarProteksi.className = "fixed inset-0 bg-[#050505] z-[9999] flex flex-col items-center justify-center hidden transition-opacity duration-300";
@@ -88,17 +87,31 @@ layarProteksi.innerHTML = `
     </div>`;
 document.body.appendChild(layarProteksi);
 
+// --- UI ALERT ELEGAN (GLASSMORPHISM) ---
 const alertModal = document.createElement('div');
 alertModal.id = "global-alert-modal";
-alertModal.className = "fixed inset-x-0 top-0 p-4 z-[10000] flex justify-center hidden transform -translate-y-full transition-all duration-500 ease-out";
+alertModal.className = "fixed top-4 sm:top-6 left-1/2 transform -translate-x-1/2 z-[10000] w-[90%] max-w-md transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] opacity-0 scale-95 -translate-y-10 pointer-events-none";
 alertModal.innerHTML = `
-    <div class="bg-white border-l-4 border-[#b32424] shadow-2xl p-5 sm:p-6 rounded-[2px] max-w-lg w-full relative flex gap-4 items-start">
-        <svg class="text-[#b32424] shrink-0 mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        <div class="flex-1"><h3 class="text-xs uppercase tracking-widest text-gray-500 mb-1 font-sans">Peringatan Prioritas</h3><p id="global-alert-text" class="text-[16px] sm:text-[18px] text-red-950 font-medium leading-relaxed break-words"></p></div>
-        <button id="close-alert-btn" class="text-gray-400 hover:text-gray-900 text-2xl font-bold font-sans line-height-1">&times;</button>
-    </div>`;
+    <div class="bg-[#111111]/85 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl p-4 sm:p-5 flex items-start gap-4">
+        <div class="relative flex shrink-0 items-center justify-center w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 mt-0.5">
+            <div class="absolute inset-0 rounded-full bg-red-500/20 animate-ping" style="animation-duration: 2s;"></div>
+            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        </div>
+        <div class="flex-1 min-w-0 pt-0.5">
+            <h3 class="text-[10px] uppercase tracking-[0.2em] text-red-400 font-bold mb-1 opacity-80">Pesan Prioritas</h3>
+            <p id="global-alert-text" class="text-[14px] sm:text-[15px] text-gray-100 font-medium leading-relaxed break-words shadow-sm"></p>
+        </div>
+        <button id="close-alert-btn" class="text-gray-500 hover:text-white transition-colors shrink-0 p-1 mt-0.5 rounded-full hover:bg-white/10">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+`;
 document.body.appendChild(alertModal);
-document.getElementById('close-alert-btn').addEventListener('click', () => { alertModal.classList.add('-translate-y-full'); setTimeout(() => alertModal.classList.add('hidden'), 500); });
+
+document.getElementById('close-alert-btn').addEventListener('click', () => { 
+    alertModal.classList.add('opacity-0', 'scale-95', '-translate-y-10', 'pointer-events-none'); 
+    alertModal.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+});
 
 function formatWaktuWiki(timestamp) {
     const dateObj = new Date(timestamp || Date.now());
@@ -107,47 +120,35 @@ function formatWaktuWiki(timestamp) {
     return `${jam}, ${tanggal}`;
 }
 
-// --- 4. GHOST ENTRY & PRESENSI (BUG FIX HURUF NYANGKUT) ---
+// --- 4. GHOST ENTRY & PRESENSI ---
 let keyBuffer = ""; const secretCode = "sandi"; 
 
-// Deteksi ketikan global (Keyboard PC/Laptop)
 document.addEventListener('keydown', (e) => {
     if (e.key.length === 1) { 
         keyBuffer += e.key.toLowerCase();
         if (keyBuffer.length > secretCode.length) keyBuffer = keyBuffer.slice(-secretCode.length);
         
         if (keyBuffer === secretCode && halamanRahasia.classList.contains('hidden')) { 
-            e.preventDefault(); // Mencegah browser mencetak huruf terakhir ("i")
-            jalankanLoading(() => {
-                gantiHalaman(halamanRahasia);
-                chatInput.value = ""; // Pastikan bersih setelah loading selesai
-            }); 
-            chatInput.value = ""; // Bersihkan langsung saat ini juga
-            keyBuffer = ""; 
+            e.preventDefault(); 
+            jalankanLoading(() => { gantiHalaman(halamanRahasia); chatInput.value = ""; }); 
+            chatInput.value = ""; keyBuffer = ""; 
         }
     }
 });
 
-// Deteksi ketikan khusus HP (Keyboard Virtual)
 chatInput.addEventListener('input', () => {
     if (chatInput.value.toLowerCase().includes(secretCode) && halamanRahasia.classList.contains('hidden')) {
-        jalankanLoading(() => {
-            gantiHalaman(halamanRahasia);
-            chatInput.value = ""; // Pastikan bersih setelah loading selesai
-        });
-        chatInput.value = ""; // Bersihkan langsung saat ini juga
-        keyBuffer = "";
+        jalankanLoading(() => { gantiHalaman(halamanRahasia); chatInput.value = ""; });
+        chatInput.value = ""; keyBuffer = "";
     }
 });
 
 const presenceRef = database.ref('status_kehadiran'); 
 let daftarUserOnline = {}; 
 
-presenceRef.orderByChild('userId').equalTo(myId).once('value', snapshot => {
-    snapshot.forEach(child => child.ref.remove());
-});
-
+presenceRef.orderByChild('userId').equalTo(myId).once('value', snapshot => { snapshot.forEach(child => child.ref.remove()); });
 const userStatusRef = presenceRef.push(); 
+
 database.ref('.info/connected').on('value', (snapshot) => {
     if (snapshot.val() === false) return;
     userStatusRef.onDisconnect().remove().then(() => userStatusRef.set({ status: 'online', userId: myId, timestamp: Date.now() }));
@@ -157,26 +158,18 @@ database.ref('.info/connected').on('value', (snapshot) => {
 presenceRef.on('child_added', (snapshot) => { 
     const data = snapshot.val(); 
     if (data && data.userId !== myId) { 
-        if (!daftarUserOnline[data.userId]) { 
-            daftarUserOnline[data.userId] = true; 
-            tampilkanNotifikasiSistem("Seorang kontributor bergabung.", "join", true, Date.now()); 
-            updateLogoVisuals(); 
-        } 
+        if (!daftarUserOnline[data.userId]) { daftarUserOnline[data.userId] = true; tampilkanNotifikasiSistem("Seorang kontributor bergabung.", "join", true, Date.now()); updateLogoVisuals(); } 
     } 
 });
 
 presenceRef.on('child_removed', (snapshot) => { 
     const data = snapshot.val(); 
     if (data && data.userId !== myId) { 
-        if (daftarUserOnline[data.userId]) { 
-            delete daftarUserOnline[data.userId]; 
-            tampilkanNotifikasiSistem("Seorang kontributor keluar.", "leave", true, Date.now()); 
-            updateLogoVisuals(); 
-        } 
+        if (daftarUserOnline[data.userId]) { delete daftarUserOnline[data.userId]; tampilkanNotifikasiSistem("Seorang kontributor keluar.", "leave", true, Date.now()); updateLogoVisuals(); } 
     } 
 });
 
-// --- 5. PANIC TAB & 5 KETUKAN HP ---
+// --- 5. PANIC TAB & PROTEKSI ---
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) document.title = "Google"; 
     else { stateRef.once('value').then((snapshot) => { if (snapshot.val()?.diproteksi) document.title = "503 Service Unavailable"; else updateJudulHalaman(); }); }
@@ -215,8 +208,7 @@ logoWiki.addEventListener('dblclick', pemicuDarurat);
 let tapCount = 0; let tapTimer;
 document.addEventListener('touchstart', (e) => {
     tapCount++; clearTimeout(tapTimer);
-    if (tapCount >= 5) { pemicuDarurat(); tapCount = 0; } 
-    else { tapTimer = setTimeout(() => { tapCount = 0; }, 1000); } 
+    if (tapCount >= 5) { pemicuDarurat(); tapCount = 0; } else { tapTimer = setTimeout(() => { tapCount = 0; }, 1000); } 
 });
 
 stateRef.on('value', (snapshot) => {
@@ -224,6 +216,7 @@ stateRef.on('value', (snapshot) => {
     if (data && data.diproteksi) { layarProteksi.classList.remove('hidden'); document.title = "503 Service Unavailable"; chatInput.blur(); } 
     else { layarProteksi.classList.add('hidden'); updateJudulHalaman(); }
 });
+
 function updateJudulHalaman() {
     if (!halamanRahasia.classList.contains('hidden')) document.title = "Sejarah Nusantara - Wikipedia";
     else if (!halamanRiwayat.classList.contains('hidden')) document.title = "Riwayat revisi: Sejarah Nusantara";
@@ -231,14 +224,7 @@ function updateJudulHalaman() {
 }
 
 // --- 6. NAVIGASI ---
-function jalankanLoading(callback) { 
-    chatInput.placeholder = "Memuat..."; 
-    chatInput.classList.add('opacity-50'); 
-    setTimeout(() => { 
-        chatInput.classList.remove('opacity-50'); 
-        if(callback) callback(); 
-    }, 400); 
-}
+function jalankanLoading(callback) { chatInput.placeholder = "Memuat..."; chatInput.classList.add('opacity-50'); setTimeout(() => { chatInput.classList.remove('opacity-50'); if(callback) callback(); }, 400); }
 function gantiHalaman(tujuan) {
     halamanUtama.classList.add('hidden'); halamanRahasia.classList.add('hidden'); halamanRiwayat.classList.add('hidden'); tujuan.classList.remove('hidden');
     if (tujuan === halamanRahasia) { chatInput.placeholder = "Ketik rahasia..."; chatInput.focus(); } else { chatInput.placeholder = "Telusuri Wikipedia"; }
@@ -254,11 +240,7 @@ chatInput.addEventListener('keydown', (e) => {
         const pesan = chatInput.value.trim();
         if (pesan === "") return;
         
-        if (halamanRahasia.classList.contains('hidden')) { 
-            window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; 
-            return; 
-        }
-        
+        if (halamanRahasia.classList.contains('hidden')) { window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; return; }
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
         if (pesan === "*#hapus#*") { chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
 
@@ -271,19 +253,14 @@ chatInput.addEventListener('keydown', (e) => {
         chatInput.value = ""; typingRef.child(myId).remove();
     }
 });
+
 chatRef.on('value', (snapshot) => { if (!snapshot.exists()) { daftarArsipLengkap.innerHTML = ""; daftarReferensi.innerHTML = ""; } });
 
 // --- 8. TYPING & HEARTBEAT ---
 const styleHeartbeat = document.createElement('style');
 styleHeartbeat.innerHTML = `
-    @keyframes heartbeatRed {
-        0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); opacity: 1; }
-        50% { filter: drop-shadow(0px 0px 4px #b32424); transform: scale(1.02); opacity: 0.8; }
-    }
-    @keyframes heartbeatBlue {
-        0%, 100% { filter: drop-shadow(0px 0px 2px #36c); transform: scale(1); opacity: 1; }
-        50% { filter: drop-shadow(0px 0px 6px #36c); transform: scale(1.03); opacity: 0.9; }
-    }
+    @keyframes heartbeatRed { 0%, 100% { filter: drop-shadow(0px 0px 1px #b32424); transform: scale(1); opacity: 1; } 50% { filter: drop-shadow(0px 0px 4px #b32424); transform: scale(1.02); opacity: 0.8; } }
+    @keyframes heartbeatBlue { 0%, 100% { filter: drop-shadow(0px 0px 2px #36c); transform: scale(1); opacity: 1; } 50% { filter: drop-shadow(0px 0px 6px #36c); transform: scale(1.03); opacity: 0.9; } }
 `;
 document.head.appendChild(styleHeartbeat);
 
@@ -291,25 +268,14 @@ let isSomeoneTyping = false;
 function updateLogoVisuals() {
     const isSomeoneOnline = Object.keys(daftarUserOnline).length > 0;
     logoWiki.style.transition = "all 0.3s ease";
-    
-    if (isSomeoneTyping) {
-        logoWiki.style.animation = "heartbeatBlue 1s infinite ease-in-out";
-    } else if (isSomeoneOnline) {
-        logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out";
-    } else {
-        logoWiki.style.animation = "none";
-        logoWiki.style.filter = "none";
-        logoWiki.style.transform = "scale(1)";
-    }
+    if (isSomeoneTyping) { logoWiki.style.animation = "heartbeatBlue 1s infinite ease-in-out"; } 
+    else if (isSomeoneOnline) { logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out"; } 
+    else { logoWiki.style.animation = "none"; logoWiki.style.filter = "none"; logoWiki.style.transform = "scale(1)"; }
 }
 
 let typingTimer;
 chatInput.addEventListener('input', () => {
-    if (!halamanRahasia.classList.contains('hidden')) { 
-        typingRef.child(myId).set(true); 
-        clearTimeout(typingTimer); 
-        typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000); 
-    }
+    if (!halamanRahasia.classList.contains('hidden')) { typingRef.child(myId).set(true); clearTimeout(typingTimer); typingTimer = setTimeout(() => typingRef.child(myId).remove(), 2000); }
 });
 
 typingRef.on('value', (snapshot) => {
@@ -322,14 +288,19 @@ function mainkanSuaraKlik() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
-        osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.05); 
+        osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.05); 
         gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
         osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.05);
     } catch(e) {}
 }
 
-// --- 9. RENDER REALTIME ---
+// --- 9. RENDER REALTIME (DEKRIPSI & TAMPILAN WIKI) ---
+function pemicuGlobalAlertPopup(pesan) { 
+    document.getElementById('global-alert-text').innerText = pesan; 
+    alertModal.classList.remove('opacity-0', 'scale-95', '-translate-y-10', 'pointer-events-none'); 
+    alertModal.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+}
+
 chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const data = snapshot.val();
     const isMe = data.senderId === myId;
@@ -393,15 +364,10 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     }
     
     if (pesanBaru && !halamanRahasia.classList.contains('hidden')) { 
-        if(appContainer) {
-            appContainer.scrollTo({ top: appContainer.scrollHeight, behavior: 'smooth' });
-        } else {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
+        if(appContainer) { appContainer.scrollTo({ top: appContainer.scrollHeight, behavior: 'smooth' }); } 
+        else { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
     }
 });
-
-function pemicuGlobalAlertPopup(pesan) { document.getElementById('global-alert-text').innerText = pesan; alertModal.classList.remove('hidden'); setTimeout(() => alertModal.classList.remove('-translate-y-full'), 10); }
 
 function tampilkanLogAlertDiArsip(teks, waktu, isMe, key) {
     const liArsip = document.createElement('li');
@@ -414,9 +380,7 @@ function tampilkanLogAlertDiArsip(teks, waktu, isMe, key) {
 function tampilkanNotifikasiSistem(pesanSistem, tipe, pesanBaru, waktuTercatat) {
     const li = document.createElement('li');
     let warnaHex = "#72777d"; let ikon = "♦";
-    if (tipe === 'join') { warnaHex = "#006400"; ikon = "+"; } 
-    else if (tipe === 'leave') { warnaHex = "#b32424"; ikon = "-"; } 
-    else if (tipe === 'darurat_on') { warnaHex = "#855e00"; ikon = "⚠"; } 
+    if (tipe === 'join') { warnaHex = "#006400"; ikon = "+"; } else if (tipe === 'leave') { warnaHex = "#b32424"; ikon = "-"; } else if (tipe === 'darurat_on') { warnaHex = "#855e00"; ikon = "⚠"; } 
 
     const liArsip = document.createElement('li');
     liArsip.className = "flex flex-col sm:flex-row gap-3 border-b border-gray-200 py-2 text-[12px] bg-gray-50";
