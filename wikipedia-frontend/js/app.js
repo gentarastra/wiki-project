@@ -13,7 +13,13 @@ const database = firebase.database();
 const chatRef = database.ref('wiki_history'); 
 const stateRef = database.ref('status_global'); 
 const typingRef = database.ref('status_mengetik');
-const myId = Math.random().toString(36).substring(7);
+
+// FIX: Simpan ID perangkat agar refresh tidak dianggap orang lain
+let myId = localStorage.getItem('wiki_agen_id');
+if (!myId) {
+    myId = "agen_" + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem('wiki_agen_id', myId);
+}
 const waktuMulaiSesi = Date.now();
 
 // KUNCI RAHASIA E2EE (Enkripsi End-to-End)
@@ -33,11 +39,9 @@ function dekripsiPesan(teksEnkripsi) {
 
 // --- 2. FITUR PENGHANCUR OTOMATIS 24 JAM ---
 function jalankanPembersihOtomatis() {
-    const batasWaktu = Date.now() - (24 * 60 * 60 * 1000); // Batas 24 Jam
+    const batasWaktu = Date.now() - (24 * 60 * 60 * 1000); 
     chatRef.once('value', (snapshot) => {
-        snapshot.forEach((child) => {
-            if (child.val().timestamp < batasWaktu) chatRef.child(child.key).remove(); 
-        });
+        snapshot.forEach((child) => { if (child.val().timestamp < batasWaktu) chatRef.child(child.key).remove(); });
     });
 }
 jalankanPembersihOtomatis(); 
@@ -55,10 +59,9 @@ const sidebarKiri = document.getElementById('sidebar-kiri');
 const daftarReferensi = document.getElementById('daftar-referensi');
 const logoWiki = document.getElementById('logo-wiki'); 
 
-// Hilangkan tombol rahasia secara paksa
 if(menuRahasia) menuRahasia.style.display = "none";
 
-// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI (DESAIN MODERN SERVER ERROR) ---
+// --- BIKIN ELEMEN LAYAR BLUR PROTEKSI ---
 const layarProteksi = document.createElement('div');
 layarProteksi.id = "layar-proteksi";
 layarProteksi.className = "fixed inset-0 bg-[#050505] z-[9999] flex flex-col items-center justify-center hidden transition-opacity duration-300";
@@ -88,16 +91,12 @@ alertModal.className = "fixed inset-x-0 top-0 p-4 z-[10000] flex justify-center 
 alertModal.innerHTML = `
     <div class="bg-white border-l-4 border-[#b32424] shadow-2xl p-5 sm:p-6 rounded-[2px] max-w-lg w-full relative flex gap-4 items-start">
         <svg class="text-[#b32424] shrink-0 mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        <div class="flex-1">
-            <h3 class="text-xs uppercase tracking-widest text-gray-500 mb-1 font-sans">Peringatan Prioritas</h3>
-            <p id="global-alert-text" class="text-[16px] sm:text-[18px] text-red-950 font-medium leading-relaxed break-words"></p>
-        </div>
+        <div class="flex-1"><h3 class="text-xs uppercase tracking-widest text-gray-500 mb-1 font-sans">Peringatan Prioritas</h3><p id="global-alert-text" class="text-[16px] sm:text-[18px] text-red-950 font-medium leading-relaxed break-words"></p></div>
         <button id="close-alert-btn" class="text-gray-400 hover:text-gray-900 text-2xl font-bold font-sans line-height-1">&times;</button>
     </div>`;
 document.body.appendChild(alertModal);
 document.getElementById('close-alert-btn').addEventListener('click', () => { alertModal.classList.add('-translate-y-full'); setTimeout(() => alertModal.classList.add('hidden'), 500); });
 
-// --- FORMAT WAKTU WIKIPEDIA ---
 function formatWaktuWiki(timestamp) {
     const dateObj = new Date(timestamp || Date.now());
     const tanggal = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -115,29 +114,39 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-const presenceRef = database.ref('status_kehadiran'); const userStatusRef = presenceRef.push(); let daftarUserOnline = {}; 
+const presenceRef = database.ref('status_kehadiran'); 
+let daftarUserOnline = {}; 
+
+// Bersihkan ghost session milik kita sendiri saat web baru dimuat
+presenceRef.orderByChild('userId').equalTo(myId).once('value', snapshot => {
+    snapshot.forEach(child => child.ref.remove());
+});
+
+const userStatusRef = presenceRef.push(); 
 database.ref('.info/connected').on('value', (snapshot) => {
     if (snapshot.val() === false) return;
-    userStatusRef.onDisconnect().remove().then(() => userStatusRef.set({ status: 'online', userId: myId }));
+    userStatusRef.onDisconnect().remove().then(() => userStatusRef.set({ status: 'online', userId: myId, timestamp: Date.now() }));
     typingRef.child(myId).onDisconnect().remove(); 
 });
+
 presenceRef.on('child_added', (snapshot) => { 
     const data = snapshot.val(); 
     if (data && data.userId !== myId) { 
         if (!daftarUserOnline[data.userId]) { 
             daftarUserOnline[data.userId] = true; 
             tampilkanNotifikasiSistem("Seorang kontributor bergabung.", "join", true, Date.now()); 
-            updateLogoVisuals(); // Update visual logo
+            updateLogoVisuals(); 
         } 
     } 
 });
+
 presenceRef.on('child_removed', (snapshot) => { 
     const data = snapshot.val(); 
     if (data && data.userId !== myId) { 
         if (daftarUserOnline[data.userId]) { 
             delete daftarUserOnline[data.userId]; 
             tampilkanNotifikasiSistem("Seorang kontributor keluar.", "leave", true, Date.now()); 
-            updateLogoVisuals(); // Update visual logo
+            updateLogoVisuals(); 
         } 
     } 
 });
@@ -150,20 +159,16 @@ document.addEventListener("visibilitychange", () => {
 tombolMenu.addEventListener('click', (e) => { e.stopPropagation(); sidebarKiri.classList.toggle('hidden'); });
 document.addEventListener('click', (e) => { if (!sidebarKiri.contains(e.target) && e.target !== tombolMenu) { if (window.innerWidth < 768) sidebarKiri.classList.add('hidden'); } });
 
-// FITUR AUTO-LOGOUT LOKAL (5 MENIT)
 let idleTimeout;
 function resetIdleTimer() {
     clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => { 
-        if (!halamanRahasia.classList.contains('hidden') || !halamanRiwayat.classList.contains('hidden')) {
-            jalankanLoading(() => gantiHalaman(halamanUtama));
-        }
+        if (!halamanRahasia.classList.contains('hidden') || !halamanRiwayat.classList.contains('hidden')) { jalankanLoading(() => gantiHalaman(halamanUtama)); }
     }, 300000); 
 }
 ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => document.addEventListener(evt, resetIdleTimer));
 resetIdleTimer(); 
 
-// LOGIKA ESCAPE BARU (1x MASUK, 3x KELUAR)
 let escCount = 0; let escTimer;
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -180,7 +185,6 @@ document.addEventListener('keydown', (e) => {
     if (e.key === '`' || e.key === '~' || (e.altKey && e.key.toLowerCase() === 'z')) window.location.replace("https://classroom.google.com"); 
 });
 
-// LOGIKA SENTUHAN HP
 function pemicuDarurat() { stateRef.once('value').then((snapshot) => stateRef.set({ diproteksi: !(snapshot.val()?.diproteksi || false) })); }
 logoWiki.addEventListener('dblclick', pemicuDarurat);
 let tapCount = 0; let tapTimer;
@@ -190,7 +194,6 @@ document.addEventListener('touchstart', (e) => {
     else { tapTimer = setTimeout(() => { tapCount = 0; }, 1000); } 
 });
 
-// LISTENER LAYAR MAINTENANCE
 stateRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (data && data.diproteksi) { layarProteksi.classList.remove('hidden'); document.title = "503 Service Unavailable"; chatInput.blur(); } 
@@ -217,13 +220,9 @@ chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const pesan = chatInput.value.trim();
         if (pesan === "") return;
-
         if (halamanRahasia.classList.contains('hidden')) { window.location.href = `https://id.wikipedia.org/wiki/Istimewa:Pencarian?search=${encodeURIComponent(pesan)}`; return; }
         if (pesan === "*#arsip#*") { gantiHalaman(halamanRiwayat); chatInput.value = ""; return; }
-        if (pesan === "*#hapus#*") {
-            chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" }));
-            chatInput.value = ""; return;
-        }
+        if (pesan === "*#hapus#*") { chatRef.remove().then(() => chatRef.push({ teks: enkripsiPesan("Seluruh riwayat obrolan dibersihkan."), tipe: 'darurat_on', timestamp: Date.now(), senderId: "system" })); chatInput.value = ""; return; }
 
         let tipePesan = 'chat'; let teksFinal = pesan;
         if (pesan.startsWith("/alert ")) { tipePesan = 'alert'; teksFinal = pesan.replace("/alert ", ""); }
@@ -252,15 +251,12 @@ function updateLogoVisuals() {
     logoWiki.style.transition = "all 0.3s ease";
     
     if (isSomeoneTyping) {
-        // MODE 2: Mengetik (Biru terang, tidak berdenyut)
         logoWiki.style.animation = "none";
         logoWiki.style.filter = "drop-shadow(0px 0px 6px #36c)";
         logoWiki.style.transform = "scale(1)";
     } else if (isSomeoneOnline) {
-        // MODE 1: Online / Standby (Merah berdenyut halus seperti detak jantung)
         logoWiki.style.animation = "heartbeatRed 2.5s infinite ease-in-out";
     } else {
-        // MODE 0: Offline (Normal / Tidak ada efek)
         logoWiki.style.animation = "none";
         logoWiki.style.filter = "none";
         logoWiki.style.transform = "scale(1)";
@@ -278,10 +274,8 @@ chatInput.addEventListener('input', () => {
 
 typingRef.on('value', (snapshot) => {
     isSomeoneTyping = false;
-    if (snapshot.val()) { 
-        Object.keys(snapshot.val()).forEach(id => { if (id !== myId) isSomeoneTyping = true; }); 
-    }
-    updateLogoVisuals(); // Update visual logo setiap ada perubahan status ngetik
+    if (snapshot.val()) { Object.keys(snapshot.val()).forEach(id => { if (id !== myId) isSomeoneTyping = true; }); }
+    updateLogoVisuals(); 
 });
 
 function mainkanSuaraKlik() {
@@ -301,11 +295,8 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
     const isMe = data.senderId === myId;
     const pesanBaru = data.timestamp >= waktuMulaiSesi;
     const waktuFormatLengkap = formatWaktuWiki(data.timestamp);
-    
-    // DEKRIPSI OTOMATIS SAAT RENDER
     const teksAsli = dekripsiPesan(data.teks);
     
-    // FEEDBACK AUDIO & GETAR
     if (pesanBaru && !isMe) {
         if (data.tipe === 'alert') { if ("vibrate" in navigator) navigator.vibrate([300, 100, 300, 100, 500]); } 
         else if (document.hidden || data.tipe === 'bom') { mainkanSuaraKlik(); if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]); }
@@ -326,12 +317,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
         else if (data.tipe === 'image') { teksArsip = `<span class="text-gray-900 font-medium">📷 Lampiran Media: <a href="${teksAsli}" target="_blank" class="text-blue-600 hover:underline">Lihat Gambar</a></span>`; } 
         else { teksArsip = isMe ? `<span class="text-gray-900 font-medium break-words">${teksAsli}</span>` : `<span class="text-gray-700 italic break-words">${teksAsli}</span>`; }
 
-        liArsip.innerHTML = `
-            <div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5">
-                <div><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span></div>
-                <div class="mt-0.5">${waktuFormatLengkap}</div>
-            </div>
-            <div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
+        liArsip.innerHTML = `<div class="flex flex-col min-w-[150px] text-gray-500 text-[11px] shrink-0 font-sans mt-0.5"><div><span class="text-[#0645ad] hover:underline cursor-pointer">(skr | prb)</span></div><div class="mt-0.5">${waktuFormatLengkap}</div></div><div class="flex-1 flex items-start gap-2">${badge} ${teksArsip}</div>`;
         daftarArsipLengkap.appendChild(liArsip);
 
         if (pesanBaru) {
@@ -340,13 +326,7 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
             if (data.tipe === 'bom') { liRef.innerHTML = `<span class="text-red-500 font-bold animate-pulse">^ [Pesan Terbakar: "${teksAsli}" - Hancur: <span id="ref-timer-${snapshot.key}">10</span>s]</span>`; } 
             else if (data.tipe === 'image') {
                 const randNum = Math.floor(Math.random() * 99) + 1;
-                liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="relative group cursor-pointer text-[#0645ad] font-mono hover:underline">[${randNum}]
-                    <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block z-[100000]">
-                        <div class="bg-white border border-gray-300 shadow-2xl p-1 rounded-sm w-max max-w-[250px]">
-                            <img src="${teksAsli}" class="w-full h-auto object-cover" alt="Media Ref">
-                        </div>
-                    </div>
-                </span>. <i>Media Arsip Eksternal</i>, 2026.`;
+                liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="relative group cursor-pointer text-[#0645ad] font-mono hover:underline">[${randNum}]<div class="absolute bottom-full left-0 mb-2 hidden group-hover:block z-[100000]"><div class="bg-white border border-gray-300 shadow-2xl p-1 rounded-sm w-max max-w-[250px]"><img src="${teksAsli}" class="w-full h-auto object-cover" alt="Media Ref"></div></div></span>. <i>Media Arsip Eksternal</i>, 2026.`;
             } 
             else if (isMe) { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>a</sup></span> <span class="text-gray-900 font-medium">"${teksAsli}"</span>. <i>Arsip Pribadi</i>, 2026.`; } 
             else { liRef.innerHTML = `<span class="text-[#36c] cursor-pointer">^ <sup>b</sup></span> <span class="text-[#0645ad] italic">"${teksAsli}"</span>. <i>Sumber Luar</i>, 2026.`; }
@@ -368,7 +348,6 @@ chatRef.limitToLast(50).on('child_added', (snapshot) => {
                 }
             }, 1000);
         }
-
     } else {
         if (pesanBaru || data.tipe === 'darurat_on') tampilkanNotifikasiSistem(teksAsli, data.tipe, pesanBaru, data.timestamp);
     }
